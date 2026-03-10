@@ -4,36 +4,47 @@
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
+## Project Structure
+
+The project has been organized into two main folders:
+
+- **frontend/**: Contains the React + Vite application code.
+- **backend/**: Contains Supabase SQL scripts and utility database scripts.
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
 **Use your preferred IDE**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+If you want to work locally using your own IDE, you can clone this repo and push changes.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+The only requirement is having Node.js & npm installed.
 
-Follow these steps:
+### Setting up the Frontend:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Step 1: Navigate to the frontend directory
+cd frontend
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Step 2: Install the necessary dependencies
+npm install
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 3: Start the development server
 npm run dev
+```
+
+Alternatively, from the root directory, you can use:
+- `npm run frontend:install` - To install frontend dependencies.
+- `npm run frontend:dev` - To start the frontend development server.
+- `npm run frontend:build` - To build the frontend.
+
+### Backend/Database Scripts:
+
+The `backend/` folder contains SQL scripts for Supabase and JS utility scripts. You can run the JS scripts using Node.js:
+
+```sh
+node backend/test-supabase.js
 ```
 
 **Edit a file directly in GitHub**
