@@ -1,6 +1,13 @@
 import { motion, useInView } from 'motion/react';
 import { useRef, useMemo } from 'react';
 
+interface AnimationState {
+  filter?: string;
+  opacity?: number;
+  y?: number;
+  [key: string]: number | string | undefined;
+}
+
 interface BlurTextProps {
   text?: string;
   delay?: number;
@@ -9,17 +16,17 @@ interface BlurTextProps {
   direction?: 'top' | 'bottom';
   threshold?: number;
   rootMargin?: string;
-  animationFrom?: any;
-  animationTo?: any[];
+  animationFrom?: AnimationState;
+  animationTo?: AnimationState[];
   easing?: (t: number) => number;
   onAnimationComplete?: () => void;
   stepDuration?: number;
   style?: React.CSSProperties;
 }
 
-const buildKeyframes = (from: any, steps: any[]) => {
+const buildKeyframes = (from: AnimationState, steps: AnimationState[]) => {
   const keys = new Set([...Object.keys(from), ...steps.flatMap(s => Object.keys(s))]);
-  const keyframes: any = {};
+  const keyframes: Record<string, (number | string | undefined)[]> = {};
   keys.forEach(k => {
     keyframes[k] = [from[k], ...steps.map(s => s[k])];
   });

@@ -26,7 +26,12 @@ const MessDashboard = () => {
     pendingComplaints: 0,
     newComplaints: 0
   });
-  const [attendanceData, setAttendanceData] = useState<any[]>([]);
+  interface AttendanceChartData {
+    meal: string;
+    present: number;
+    absent: number;
+  }
+  const [attendanceData, setAttendanceData] = useState<AttendanceChartData[]>([]);
 
   const fetchDashboardData = useCallback(async (isInitial = false) => {
     try {

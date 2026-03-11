@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { type SupabaseClient } from '@supabase/supabase-js';
 
 export interface Student {
     id: number;
@@ -22,9 +23,9 @@ export interface Student {
 }
 
 // Special client for background user creation to avoid logging out the Admin
-let tempAuthClient: any = null;
+let tempAuthClient: SupabaseClient | null = null;
 
-const getTempAuthClient = async () => {
+const getTempAuthClient = async (): Promise<SupabaseClient> => {
     if (tempAuthClient) return tempAuthClient;
     
     const url = import.meta.env.VITE_SUPABASE_URL;

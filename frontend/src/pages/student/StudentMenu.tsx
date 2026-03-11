@@ -37,7 +37,6 @@ const StudentMenu = () => {
           table: 'mess_menu'
         },
         (payload) => {
-          console.log('Real-time update:', payload);
           loadMenu();
         }
       )

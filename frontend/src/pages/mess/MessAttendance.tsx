@@ -71,9 +71,10 @@ const MessAttendance = () => {
             toast.success(`Attendance marked for ${inputId}`);
             setStudentId("");
             loadAttendance(); // Refresh list
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : "Failed to mark attendance. Check if ID is correct.";
             console.error("Failed to mark attendance:", error);
-            toast.error(error.message || "Failed to mark attendance. Check if ID is correct.");
+            toast.error(errorMessage);
         } finally {
             setIsSubmitting(false);
         }

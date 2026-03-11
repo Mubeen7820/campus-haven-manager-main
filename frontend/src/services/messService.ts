@@ -56,7 +56,7 @@ export const messService = {
             .from("mess_attendance")
             .insert([{
                 student_id: student.id,
-                meal_type: mealType as any,
+                meal_type: mealType as 'Breakfast' | 'Lunch' | 'Snacks' | 'Dinner',
                 marked_at: new Date().toISOString()
             }])
             .select()

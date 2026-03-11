@@ -6,7 +6,7 @@ const ANIMATION_CONFIG = { SMOOTH_TAU: 0.25, MIN_COPIES: 2, COPY_HEADROOM: 2 };
 
 const toCssLength = (value: number | string | undefined) => (typeof value === 'number' ? `${value}px` : (value ?? undefined));
 
-const useResizeObserver = (callback: () => void, elements: React.RefObject<HTMLElement>[], dependencies: any[]) => {
+const useResizeObserver = (callback: () => void, elements: React.RefObject<HTMLElement>[], dependencies: React.DependencyList) => {
   useEffect(() => {
     if (!window.ResizeObserver) {
       const handleResize = () => callback();
@@ -14,7 +14,7 @@ const useResizeObserver = (callback: () => void, elements: React.RefObject<HTMLE
       callback();
       return () => window.removeEventListener('resize', handleResize);
     }
-    const observers = elements.map((ref: any) => {
+    const observers = elements.map((ref) => {
       if (!ref.current) return null;
       const observer = new ResizeObserver(callback);
       observer.observe(ref.current);
@@ -27,7 +27,7 @@ const useResizeObserver = (callback: () => void, elements: React.RefObject<HTMLE
   }, [callback, elements, dependencies]);
 };
 
-const useImageLoader = (seqRef: React.RefObject<HTMLUListElement>, onLoad: () => void, dependencies: any[]) => {
+const useImageLoader = (seqRef: React.RefObject<HTMLUListElement>, onLoad: () => void, dependencies: React.DependencyList) => {
   useEffect(() => {
     const images = seqRef.current?.querySelectorAll('img') ?? [];
     if (images.length === 0) {
@@ -39,8 +39,8 @@ const useImageLoader = (seqRef: React.RefObject<HTMLUListElement>, onLoad: () =>
       remainingImages -= 1;
       if (remainingImages === 0) onLoad();
     };
-    images.forEach((img: any) => {
-      const htmlImg = img;
+    images.forEach((img) => {
+      const htmlImg = img as HTMLImageElement;
       if (htmlImg.complete) {
         handleImageLoad();
       } else {
@@ -49,17 +49,18 @@ const useImageLoader = (seqRef: React.RefObject<HTMLUListElement>, onLoad: () =>
       }
     });
     return () => {
-      images.forEach((img: any) => {
-        img.removeEventListener('load', handleImageLoad);
-        img.removeEventListener('error', handleImageLoad);
+      images.forEach((img) => {
+        const htmlImg = img as HTMLImageElement;
+        htmlImg.removeEventListener('load', handleImageLoad);
+        htmlImg.removeEventListener('error', handleImageLoad);
       });
     };
   }, [onLoad, seqRef, dependencies]);
 };
 
-const useAnimationLoop = (trackRef: any, targetVelocity: any, seqWidth: any, seqHeight: any, isHovered: any, hoverSpeed: any, isVertical: any) => {
-  const rafRef = useRef<any>(null);
-  const lastTimestampRef = useRef<any>(null);
+const useAnimationLoop = (trackRef: React.RefObject<HTMLDivElement>, targetVelocity: number, seqWidth: number, seqHeight: number, isHovered: boolean, hoverSpeed: number | undefined, isVertical: boolean) => {
+  const rafRef = useRef<number | null>(null);
+  const lastTimestampRef = useRef<number | null>(null);
   const offsetRef = useRef(0);
   const velocityRef = useRef(0);
 
@@ -77,7 +78,7 @@ const useAnimationLoop = (trackRef: any, targetVelocity: any, seqWidth: any, seq
       track.style.transform = transformValue;
     }
 
-    const animate = (timestamp: any) => {
+    const animate = (timestamp: number) => {
       if (lastTimestampRef.current === null) {
         lastTimestampRef.current = timestamp;
       }

@@ -28,13 +28,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+
+
+  const fetchProfile = React.useCallback(async (userId: string, email: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+      }
+
+      // Get updated user metadata from Auth session as backup
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+
+      let displayName = data?.full_name || authUser?.user_metadata?.full_name || email.split('@')[0];
+      const avatarUrl = data?.avatar_url || authUser?.user_metadata?.avatar_url;
+
+      // If it's a student, try to get their name from the students table
+      if (data?.role === 'student' || authUser?.user_metadata?.role === 'student') {
+        const { data: studentData } = await supabase
+          .from('students')
+          .select('name')
+          .eq('profile_id', userId)
+          .maybeSingle();
+
+        if (studentData?.name) {
+          displayName = studentData.name;
+        }
+      }
+
+      setUser({
+        id: userId,
+        name: displayName,
+        email: email,
+        role: (data?.role || authUser?.user_metadata?.role || 'student') as UserRole,
+        avatar: avatarUrl,
+        phone: data?.phone || authUser?.user_metadata?.phone,
+        address: data?.address || authUser?.user_metadata?.address
+      });
+
+    } catch (err) {
+      console.error("Unexpected error fetching profile:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     // Timeout to prevent stuck loading screen
     const timeoutId = setTimeout(() => {
-      if (isLoading) {
-        console.warn("Auth initialization timed out");
-        setIsLoading(false);
-      }
+      // Use a local variable or ref if you want to avoid isLoading dependency here, 
+      // but initialization should only happen once.
+      setIsLoading(false);
     }, 5000);
 
     // Check active session
@@ -66,55 +115,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, []);
-
-  const fetchProfile = async (userId: string, email: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-        if (error) {
-          console.error("Error fetching profile:", error);
-        }
-
-        // Get updated user metadata from Auth session as backup
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        
-        let displayName = data?.full_name || authUser?.user_metadata?.full_name || email.split('@')[0];
-        let avatarUrl = data?.avatar_url || authUser?.user_metadata?.avatar_url;
-        
-        // If it's a student, try to get their name from the students table
-        if (data?.role === 'student' || authUser?.user_metadata?.role === 'student') {
-          const { data: studentData } = await supabase
-            .from('students')
-            .select('name')
-            .eq('profile_id', userId)
-            .maybeSingle();
-          
-          if (studentData?.name) {
-            displayName = studentData.name;
-          }
-        }
-
-        setUser({
-          id: userId,
-          name: displayName,
-          email: email,
-          role: (data?.role || authUser?.user_metadata?.role || 'student') as UserRole,
-          avatar: avatarUrl,
-          phone: data?.phone || authUser?.user_metadata?.phone,
-          address: data?.address || authUser?.user_metadata?.address
-        });
-
-    } catch (err) {
-      console.error("Unexpected error fetching profile:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [fetchProfile]);
 
   const login = async (email: string, password: string): Promise<{ role?: UserRole; error: Error | null }> => {
     try {
@@ -129,8 +130,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return { error: new Error("Invalid email or password. Please try again.") };
         }
         if (error.message === "Email not confirmed") {
-          return { 
-            error: new Error("Login blocked: Email not confirmed. Admin must disable 'Confirm Email' in Supabase Settings or confirm the email manually.") 
+          return {
+            error: new Error("Login blocked: Email not confirmed. Admin must disable 'Confirm Email' in Supabase Settings or confirm the email manually.")
           };
         }
         return { error };
@@ -149,7 +150,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       return { error: new Error("No user data returned") };
-    } catch (err: any) {
+    } catch (err: unknown) {
       return { error: err as Error };
     }
   };

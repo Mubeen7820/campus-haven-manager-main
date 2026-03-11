@@ -65,7 +65,7 @@ const LoginPage = () => {
     <div
       className="min-h-screen flex flex-col bg-slate-950 overflow-y-auto"
     >
-      <div 
+      <div
         className="min-h-screen w-full flex items-center p-8 lg:p-24 relative bg-cover bg-center"
         style={{ backgroundImage: "url('/login-bg.jpg')" }}
       >
@@ -233,7 +233,7 @@ const LoginPage = () => {
                         className="absolute inset-0"
                         style={{
                           background: 'conic-gradient(from var(--angle), transparent 25%, #06b6d4, transparent 50%)',
-                          animation: 'shimmer-spin 2s linear infinite',
+                          animation: 'shimmer-spin 2.5s linear infinite',
                         }}
                       />
                       <span className="relative z-10 w-full text-xl py-5 bg-[#1e293b] text-white rounded-xl flex items-center justify-center gap-2 group-hover:bg-[#0f172a] transition-all font-black tracking-wide">

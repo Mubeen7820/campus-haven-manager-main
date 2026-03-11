@@ -4,21 +4,20 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { messService, MessMenu } from "@/services/messService";
-import { studentService } from "@/services/studentService";
+import { studentService, Student } from "@/services/studentService";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-
-
+import { useCallback } from "react";
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 const StudentDashboard = () => {
   const { user } = useAuth();
   const [menu, setMenu] = useState<MessMenu[]>([]);
-  const [studentData, setStudentData] = useState<any>(null);
+  const [studentData, setStudentData] = useState<Student | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
       const [menuData, sData] = await Promise.all([
@@ -33,7 +32,7 @@ const StudentDashboard = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id]);
 
   useEffect(() => {
     loadData();
@@ -44,7 +43,7 @@ const StudentDashboard = () => {
       })
       .subscribe();
     return () => { subscription.unsubscribe(); };
-  }, [user?.id]);
+  }, [user?.id, loadData]);
 
   const getMenuItems = (day: string, meal: string) => {
     return menu?.find(m => m.day_of_week === day && m.meal_type === meal)?.items || "-";

@@ -118,9 +118,10 @@ const AppSidebar = () => {
       setPreviewUrl(null); 
       setUploadSuccess(true);
       toast.success("Profile photo updated successfully!");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Something went wrong during upload";
       console.error("Upload process error:", err);
-      setUploadError(err.message || "Something went wrong during upload");
+      setUploadError(errorMessage);
       setPreviewUrl(null); // Revert to old image
     } finally {
       setUploading(false);
