@@ -121,6 +121,11 @@
     @apply border-border;
   }
 
+  html {
+    /* Reduce overall size of the application since it appears too big on desktop */
+    zoom: 0.80;
+  }
+
   body {
     @apply bg-background text-foreground font-sans;
     font-family: 'Inter', system-ui, sans-serif;
