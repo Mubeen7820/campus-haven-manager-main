@@ -135,26 +135,26 @@ const AppSidebar = () => {
     <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
       <DialogTrigger asChild>
         <div
-          className="flex flex-col items-center p-6 bg-slate-50 rounded-2xl border border-slate-200 cursor-pointer group hover:bg-slate-100 transition-all duration-300"
+          className="flex flex-col items-center p-5 bg-slate-50 rounded-2xl border border-slate-200 cursor-pointer group hover:bg-slate-100 transition-all duration-300"
           title="Click to view profile"
         >
-          <div className="relative mb-4">
-            <div className="w-32 h-32 rounded-full border-4 border-orange-500 p-1 bg-slate-50 overflow-hidden group-hover:border-orange-400 transition-colors shadow-xl">
+          <div className="relative mb-3">
+            <div className="w-24 h-24 rounded-full border-4 border-orange-500 p-1 bg-slate-50 overflow-hidden group-hover:border-orange-400 transition-colors shadow-lg">
               {displayAvatar ? (
                 <img src={displayAvatar} alt={user.name} className="w-full h-full rounded-full object-cover" />
               ) : (
-                <div className="w-full h-full rounded-full bg-slate-100 flex items-center justify-center text-3xl font-bold text-slate-300">
+                <div className="w-full h-full rounded-full bg-slate-100 flex items-center justify-center text-2xl font-bold text-slate-300">
                   {user.name.split(' ').map(n => n[0]).join('')}
                 </div>
               )}
             </div>
-            <div className="absolute bottom-1 right-1 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center shadow-lg group-hover:bg-orange-400 transition-colors">
-              <Camera className="w-4 h-4 text-white" />
+            <div className="absolute bottom-0 right-0 w-7 h-7 bg-orange-500 rounded-full flex items-center justify-center shadow-md group-hover:bg-orange-400 transition-colors">
+              <Camera className="w-3.5 h-3.5 text-white" />
             </div>
           </div>
-          <h2 className="text-2xl font-black text-slate-900 text-center mb-1 group-hover:text-orange-500 transition-colors">{user.name}</h2>
-          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-orange-400">
-            <span className="w-2 h-2 rounded-full bg-orange-500 inline-block animate-pulse" />
+          <h2 className="text-[17px] font-black text-slate-900 text-center mb-0.5 group-hover:text-orange-500 transition-colors">{user.name}</h2>
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 inline-block animate-pulse" />
             Active Now
           </span>
         </div>
@@ -272,11 +272,11 @@ const AppSidebar = () => {
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-white text-slate-900 border-r border-slate-200 shadow-sm">
       {/* Aurora Logo Section */}
-      <div className="p-8 pb-4 flex items-center gap-3">
-        <img src="/aurora-logo.png" alt="Aurora Logo" className="w-10 h-10 object-contain" />
+      <div className="p-6 pb-4 flex items-center gap-3">
+        <img src="/aurora-logo.png" alt="Aurora Logo" className="w-8 h-8 object-contain" />
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900">Aurora</h1>
-          <p className="text-[12px] uppercase tracking-widest text-orange-500 font-black">Hostel & Mess</p>
+          <h1 className="text-xl font-black tracking-tight text-slate-900">Aurora</h1>
+          <p className="text-[10px] uppercase tracking-widest text-orange-500 font-black">Hostel & Mess</p>
         </div>
       </div>
  
@@ -286,7 +286,7 @@ const AppSidebar = () => {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 p-6 space-y-4 overflow-y-auto mt-4">
+      <nav className="flex-1 p-4 px-6 space-y-2 overflow-y-auto mt-2">
         {items.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -294,13 +294,13 @@ const AppSidebar = () => {
               key={item.path}
               to={item.path}
               onClick={() => setMobileOpen(false)}
-              className={({ isActive }) => `flex items-center px-6 py-4 rounded-2xl text-lg font-black transition-all duration-300 group ${isActive
+              className={({ isActive }) => `flex items-center px-4 py-3 rounded-xl text-[15px] font-bold transition-all duration-300 group ${isActive
                 ? "bg-orange-50 text-orange-600 shadow-sm"
                 : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
                 }`}
             >
-              <span className={`mr-4 transition-colors ${isActive ? "text-orange-500" : "text-slate-300 group-hover:text-orange-400"}`}>
-                <item.icon className="w-7 h-7" />
+              <span className={`mr-3 transition-colors ${isActive ? "text-orange-500" : "text-slate-300 group-hover:text-orange-400"}`}>
+                <item.icon className="w-5 h-5" />
               </span>
               {item.label}
             </NavLink>
@@ -309,12 +309,12 @@ const AppSidebar = () => {
       </nav>
 
       {/* Logout at Bottom */}
-      <div className="p-6 border-t border-slate-100">
+      <div className="p-4 px-6 border-t border-slate-100">
         <button
           onClick={logout}
-          className="flex items-center gap-3 px-6 py-3 w-full rounded-2xl text-lg font-black text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all group"
+          className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-[15px] font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all group"
         >
-          <LogOut className="w-6 h-6 group-hover:text-red-500 transition-colors" />
+          <LogOut className="w-5 h-5 group-hover:text-red-500 transition-colors" />
           Sign Out
         </button>
       </div>
@@ -362,8 +362,8 @@ const AppSidebar = () => {
       </AnimatePresence>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:block w-[320px] min-h-screen shrink-0">
-        <div className="fixed w-[320px] h-screen">
+      <aside className="hidden lg:block w-[280px] min-h-screen shrink-0">
+        <div className="fixed w-[280px] h-screen">
           <SidebarContent />
         </div>
       </aside>
