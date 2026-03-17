@@ -16,6 +16,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
     DialogFooter,
 } from "@/components/ui/dialog";
 import { MessageSquare, CheckCircle, Loader2 } from "lucide-react";
@@ -153,6 +154,9 @@ const MessComplaints = () => {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Respond to Complaint</DialogTitle>
+                        <DialogDescription>
+                            Review the student's complaint and provide a resolution response.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="p-3 bg-muted rounded-md text-sm border border-border">

@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
@@ -136,6 +137,9 @@ const StudentComplaints = () => {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>New Complaint</DialogTitle>
+                <DialogDescription>
+                  Please provide details about the issue you are facing.
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 py-4">
                 <div className="space-y-2">

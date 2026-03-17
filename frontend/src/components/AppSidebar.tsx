@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase";
@@ -162,6 +163,9 @@ const AppSidebar = () => {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">My Profile</DialogTitle>
+          <DialogDescription className="sr-only">
+            View and manage your account details and profile photo.
+          </DialogDescription>
         </DialogHeader>
 
         {/* Avatar with upload */}

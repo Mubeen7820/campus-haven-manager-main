@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
@@ -133,6 +134,9 @@ const StudentLeaves = () => {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Apply for Leave</DialogTitle>
+                <DialogDescription>
+                  Enter the dates and reason for your leave or outing request.
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 py-4">
                 <div className="space-y-2">

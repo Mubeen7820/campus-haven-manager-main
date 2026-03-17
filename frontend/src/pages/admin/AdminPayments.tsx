@@ -17,6 +17,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
     DialogFooter,
     DialogTrigger,
 } from "@/components/ui/dialog";
@@ -41,15 +42,10 @@ const AdminPayments = () => {
 
     // Form State
     const [formData, setFormData] = useState({
-        student_id: 0, // We need to pick a student. UI had 'Student Name' and 'Room' input. 
-        // Real implementation needs a student selector.
-        // For now, I'll use a simple Input for Student ID (or we need student search).
-        // Since implementing a student search in dialog is complex, I will skip "Create Payment" fully implementation or use a placeholder Student ID input.
-        // But the previous mock UI had manual inputs for name/room.
-        // If I create a payment manually, I should link it to a student.
-        // I will add a Student ID input for now.
+        student_id: 0,
         amount: 5000,
         type: "Hostel Fee" as Payment['type'],
+        status: "Pending" as Payment['status'],
     });
 
     useEffect(() => {
@@ -113,12 +109,13 @@ const AdminPayments = () => {
                 student_id: formData.student_id,
                 amount: formData.amount,
                 type: formData.type,
+                status: formData.status,
             });
             toast.success("Payment recorded successfully");
             const pData = await paymentService.fetchPayments();
             setPayments(pData);
             setIsDialogOpen(false);
-            setFormData({ student_id: 0, amount: 5000, type: "Hostel Fee" });
+            setFormData({ student_id: 0, amount: 5000, type: "Hostel Fee", status: "Pending" });
         } catch (error: unknown) {
             console.error("Failed to create payment:", error);
             toast.error("Failed to create payment");
@@ -182,6 +179,9 @@ const AdminPayments = () => {
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Record New Payment</DialogTitle>
+                            <DialogDescription>
+                                Enter student details and payment information to record a new transaction.
+                            </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4 py-4">
                             <div className="space-y-2">
@@ -228,6 +228,22 @@ const AdminPayments = () => {
                                     value={formData.amount}
                                     onChange={(e) => handleInputChange("amount", parseInt(e.target.value))}
                                 />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="status">Status</Label>
+                                <Select
+                                    value={formData.status}
+                                    onValueChange={(val: any) => handleInputChange("status", val)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select Status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Pending">Pending (Bill Student)</SelectItem>
+                                        <SelectItem value="Paid">Paid (Confirmed)</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <DialogFooter>
