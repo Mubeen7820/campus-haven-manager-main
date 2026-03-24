@@ -47,7 +47,10 @@ const MessDashboard = () => {
 
       // 3. Fetch Complaints
       const complaints = await complaintService.fetchComplaints();
-      const messComplaints = complaints.filter(c => c.category === 'Mess' || c.category === 'Other');
+      const messComplaints = complaints.filter(c => 
+        c.category?.toLowerCase() === 'mess' || 
+        c.category?.toLowerCase() === 'other'
+      );
       const pending = messComplaints.filter(c => c.status === 'Pending').length;
       const recent = messComplaints.filter(c => {
         const createdDate = new Date(c.created_at);

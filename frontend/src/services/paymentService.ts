@@ -29,7 +29,7 @@ export const paymentService = {
         return data as Payment[];
     },
 
-    async createPayment(payment: Omit<Payment, "id" | "status" | "created_at" | "students">) {
+    async createPayment(payment: Omit<Payment, "id" | "created_at" | "students">) {
         const { data, error } = await supabase
             .from("payments")
             .insert([payment])
@@ -38,6 +38,20 @@ export const paymentService = {
 
         if (error) throw error;
         return data;
+    },
+
+    async getPendingPaymentForStudent(studentId: number) {
+        const { data, error } = await supabase
+            .from("payments")
+            .select("*")
+            .eq("student_id", studentId)
+            .eq("status", "Pending")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows returned"
+        return data as Payment | null;
     },
 
     async updatePaymentStatus(id: number, status: 'Paid' | 'Failed', transaction_id?: string) {

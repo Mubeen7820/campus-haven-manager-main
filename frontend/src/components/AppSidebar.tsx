@@ -12,8 +12,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -41,6 +44,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Complaints", path: "/student/complaints", icon: MessageSquareWarning },
     { label: "Payments", path: "/student/payments", icon: CreditCard },
     { label: "Leave Request", path: "/student/leaves", icon: FileText },
+    { label: "Attendance", path: "/student/attendance", icon: ClipboardList },
   ],
   mess_staff: [
     { label: "Dashboard", path: "/mess", icon: LayoutDashboard },
@@ -60,6 +64,9 @@ const AppSidebar = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", phone: "", address: "" });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!user) return null;
@@ -128,6 +135,39 @@ const AppSidebar = () => {
     }
   };
 
+  const handleEditToggle = () => {
+    if (!isEditingProfile) {
+      setEditForm({ name: user.name || "", phone: user.phone || "", address: user.address || "" });
+    }
+    setIsEditingProfile(!isEditingProfile);
+  };
+
+  const saveProfileDetails = async () => {
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ full_name: editForm.name, phone: editForm.phone, address: editForm.address })
+        .eq("id", user.id);
+      
+      if (error) throw error;
+      
+      if (user.role === 'student') {
+         await supabase.from("students").update({ name: editForm.name }).eq("profile_id", user.id);
+      }
+      
+      await supabase.auth.updateUser({ data: { full_name: editForm.name } });
+      await refreshProfile();
+      toast.success("Profile details updated!");
+      setIsEditingProfile(false);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to update profile");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const displayAvatar = previewUrl || user.avatar;
 
   const ProfileDialog = () => (
@@ -161,7 +201,17 @@ const AppSidebar = () => {
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">My Profile</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-xl font-bold">My Profile</DialogTitle>
+            {!isEditingProfile && (
+              <Button variant="ghost" size="sm" onClick={handleEditToggle} className="text-blue-600">
+                Edit Profile
+              </Button>
+            )}
+          </div>
+          <DialogDescription className="sr-only">
+            View and manage your account details and profile photo.
+          </DialogDescription>
         </DialogHeader>
 
         {/* Avatar with upload */}
@@ -206,14 +256,18 @@ const AppSidebar = () => {
         </div>
 
         {/* Details */}
-        <div className="space-y-4 py-2">
+        <div className="space-y-4 py-2 max-h-[40vh] overflow-y-auto">
           <div className="flex items-center gap-4 p-3 rounded-xl bg-slate-50">
             <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
               <Users className="w-5 h-5 text-blue-600" />
             </div>
-            <div>
+            <div className="flex-1">
               <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Full Name</p>
-              <p className="text-base font-semibold text-slate-900">{user.name}</p>
+              {isEditingProfile ? (
+                 <Input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="mt-1 h-8" />
+              ) : (
+                <p className="text-base font-semibold text-slate-900">{user.name}</p>
+              )}
             </div>
           </div>
 
@@ -237,28 +291,45 @@ const AppSidebar = () => {
             </div>
           </div>
 
-          {user.phone && (
+          {(user.phone || isEditingProfile) && (
             <div className="flex items-center gap-4 p-3 rounded-xl bg-slate-50">
               <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                 <Phone className="w-5 h-5 text-orange-600" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Phone</p>
-                <p className="text-base font-semibold text-slate-900">{user.phone}</p>
+                {isEditingProfile ? (
+                   <Input value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} className="mt-1 h-8" placeholder="Phone number" />
+                ) : (
+                   <p className="text-base font-semibold text-slate-900">{user.phone}</p>
+                )}
               </div>
             </div>
           )}
 
-          {user.address && (
+          {(user.address || isEditingProfile) && (
             <div className="flex items-center gap-4 p-3 rounded-xl bg-slate-50">
               <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
                 <MapPin className="w-5 h-5 text-rose-600" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Address</p>
-                <p className="text-base font-semibold text-slate-900">{user.address}</p>
+                {isEditingProfile ? (
+                   <Input value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} className="mt-1 h-8" placeholder="Address" />
+                ) : (
+                   <p className="text-base font-semibold text-slate-900">{user.address}</p>
+                )}
               </div>
             </div>
+          )}
+
+          {isEditingProfile && (
+             <div className="flex items-center justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={handleEditToggle} disabled={savingProfile}>Cancel</Button>
+                <Button onClick={saveProfileDetails} disabled={savingProfile}>
+                   {savingProfile ? "Saving..." : "Save Profile"}
+                </Button>
+             </div>
           )}
         </div>
       </DialogContent>
@@ -283,25 +354,27 @@ const AppSidebar = () => {
 
       {/* Nav */}
       <nav className="flex-1 p-6 space-y-4 overflow-y-auto mt-4">
-        {items.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={() => setMobileOpen(false)}
-              className={({ isActive }) => `flex items-center px-6 py-4 rounded-2xl text-lg font-black transition-all duration-300 group ${isActive
-                ? "bg-orange-50 text-orange-600 shadow-sm"
-                : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
-                }`}
-            >
-              <span className={`mr-4 transition-colors ${isActive ? "text-orange-500" : "text-slate-300 group-hover:text-orange-400"}`}>
-                <item.icon className="w-7 h-7" />
-              </span>
-              {item.label}
-            </NavLink>
-          );
-        })}
+        {items.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.path === "/admin" || item.path === "/student" || item.path === "/mess"}
+            onClick={() => setMobileOpen(false)}
+            className={({ isActive }) => `flex items-center px-6 py-4 rounded-2xl text-lg font-black transition-all duration-300 group ${isActive
+              ? "bg-orange-50 text-orange-600 shadow-sm"
+              : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+              }`}
+          >
+            {({ isActive }) => (
+              <>
+                <span className={`mr-4 transition-colors ${isActive ? "text-orange-500" : "text-slate-300 group-hover:text-orange-400"}`}>
+                  <item.icon className="w-7 h-7" />
+                </span>
+                {item.label}
+              </>
+            )}
+          </NavLink>
+        ))}
       </nav>
 
       {/* Logout at Bottom */}

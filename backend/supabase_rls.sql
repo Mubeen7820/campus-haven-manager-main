@@ -27,6 +27,20 @@ BEGIN
 END;
 $$;
 
+-- A helper function to check if the current user is mess staff
+CREATE OR REPLACE FUNCTION public.is_mess_staff()
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'mess_staff'
+  );
+END;
+$$;
+
 -- PROFILES
 -- Drop existing policies to ensure idempotency
 DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
@@ -101,6 +115,10 @@ CREATE POLICY "Mess staff can view student info"
 DROP POLICY IF EXISTS "Students can create complaints" ON public.complaints;
 DROP POLICY IF EXISTS "Students can view own complaints" ON public.complaints;
 DROP POLICY IF EXISTS "Admins can manage complaints" ON public.complaints;
+DROP POLICY IF EXISTS "Mess staff can manage complaints" ON public.complaints;
+DROP POLICY IF EXISTS "Mess staff can view complaints" ON public.complaints;
+DROP POLICY IF EXISTS "Mess staff can update complaints" ON public.complaints;
+DROP POLICY IF EXISTS "Mess staff can delete complaints" ON public.complaints;
 
 -- Students can insert their own complaints
 CREATE POLICY "Students can create complaints"
@@ -115,18 +133,24 @@ CREATE POLICY "Students can view own complaints"
 -- Admins can view and update all complaints
 CREATE POLICY "Admins can manage complaints"
   ON public.complaints FOR ALL
+  TO authenticated
   USING ( public.is_admin() );
 
 -- Mess staff can manage complaints (filtered in UI)
-CREATE POLICY "Mess staff can manage complaints"
-  ON public.complaints FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid()
-      AND role = 'mess_staff'
-    )
-  );
+CREATE POLICY "Mess staff can view complaints"
+  ON public.complaints FOR SELECT
+  TO authenticated
+  USING ( public.is_mess_staff() );
+
+CREATE POLICY "Mess staff can update complaints"
+  ON public.complaints FOR UPDATE
+  TO authenticated
+  USING ( public.is_mess_staff() );
+
+CREATE POLICY "Mess staff can delete complaints"
+  ON public.complaints FOR DELETE
+  TO authenticated
+  USING ( public.is_mess_staff() );
 
 
 -- LEAVES

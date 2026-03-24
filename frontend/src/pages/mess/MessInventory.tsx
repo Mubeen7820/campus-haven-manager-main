@@ -17,6 +17,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
     DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -182,6 +183,9 @@ const MessInventory = () => {
                             <Package className="w-5 h-5 text-primary" />
                             {editingItem ? "Edit Inventory Item" : "Add Inventory Item"}
                         </DialogTitle>
+                        <DialogDescription className="sr-only">
+                            Enter the details for the mess inventory item including stock levels and threshold.
+                        </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmit} className="space-y-4 py-4">
                         <div className="space-y-2">

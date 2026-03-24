@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     Table,
     TableBody,
@@ -20,11 +20,12 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Edit, Trash2, RefreshCw } from "lucide-react";
+import { Plus, Search, Edit, Trash2, RefreshCw, Camera } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { toast } from "sonner";
 import { studentService, Student } from "@/services/studentService";
 import { roomService } from "@/services/roomService";
+import { supabase } from "@/lib/supabase";
 
 const AdminStudents = () => {
     const [students, setStudents] = useState<Student[]>([]);
@@ -33,6 +34,8 @@ const AdminStudents = () => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -133,6 +136,49 @@ const AdminStudents = () => {
         return retVal;
     };
 
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const student = students.find(s => s.id === editingId);
+        if (!student || !student.profile_id) {
+            toast.error("Student must have a registered login before uploading a photo.");
+            return;
+        }
+
+        setUploadingAvatar(true);
+        try {
+            const ext = file.name.split(".").pop();
+            const fileName = `${student.profile_id}-${Date.now()}.${ext}`;
+            const filePath = `avatars/${fileName}`;
+            
+            const { error: uploadErr } = await supabase.storage
+              .from("avatars")
+              .upload(filePath, file);
+              
+            if (uploadErr) throw uploadErr;
+            
+            const { data: publicData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+            const publicUrl = publicData.publicUrl;
+            
+            const { error: updateErr } = await supabase
+              .from("profiles")
+              .update({ avatar_url: publicUrl })
+              .eq("id", student.profile_id);
+              
+            if (updateErr) throw updateErr;
+
+            toast.success("Student profile photo updated successfully!");
+            await loadData(); 
+        } catch (err: any) {
+            console.error(err);
+            toast.error("Failed to upload photo: " + (err.message || ''));
+        } finally {
+            setUploadingAvatar(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    };
+
     const openAddDialog = () => {
         setEditingId(null);
         setFormData({
@@ -229,7 +275,28 @@ const AdminStudents = () => {
                                 Enter student details including login credentials.
                             </DialogDescription>
                         </DialogHeader>
-                        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+                        {editingId && (
+                            <div className="flex items-center gap-4 py-2 border-b border-slate-100 mb-2">
+                                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200">
+                                    {students.find(s => s.id === editingId)?.profiles?.avatar_url ? (
+                                        <img src={students.find(s => s.id === editingId)!.profiles!.avatar_url!} alt="Avatar" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="text-xl font-bold text-slate-400">{formData.name.charAt(0) || "?"}</span>
+                                    )}
+                                </div>
+                                <div>
+                                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} />
+                                    <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploadingAvatar || !students.find(s => s.id === editingId)?.profile_id}>
+                                        <Camera className="w-4 h-4 mr-2" />
+                                        {uploadingAvatar ? "Uploading..." : "Change Photo"}
+                                    </Button>
+                                    {!students.find(s => s.id === editingId)?.profile_id && (
+                                        <p className="text-xs text-slate-400 mt-1">Student must have a login to upload a photo.</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                        <form onSubmit={handleSubmit} className="space-y-4 py-2">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="name">Full Name</Label>
@@ -367,7 +434,18 @@ const AdminStudents = () => {
                                 filteredStudents.map((student) => (
                                     <tr key={student.id} className="group hover:bg-slate-50/50 transition-colors">
                                         <td className="py-5 px-8 font-mono text-[11px] font-black text-slate-400 uppercase tracking-wider">{student.admission_no}</td>
-                                        <td className="py-5 px-6 font-bold text-slate-700">{student.name}</td>
+                                        <td className="py-5 px-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200 shrink-0">
+                                                    {student.profiles?.avatar_url ? (
+                                                        <img src={student.profiles.avatar_url} alt={student.name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <span className="text-xs font-bold text-slate-400">{student.name.charAt(0)}</span>
+                                                    )}
+                                                </div>
+                                                <span className="font-bold text-slate-700">{student.name}</span>
+                                            </div>
+                                        </td>
                                         <td className="py-5 px-6">
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-bold text-[#0f172a]">{student.rooms?.room_number || "Unassigned"}</span>

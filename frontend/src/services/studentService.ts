@@ -20,6 +20,9 @@ export interface Student {
         room_number: string;
         block: string;
     };
+    profiles?: {
+        avatar_url?: string;
+    };
 }
 
 // Special client for background user creation to avoid logging out the Admin
@@ -46,7 +49,7 @@ export const studentService = {
     async fetchStudents() {
         const { data, error } = await supabase
             .from("students")
-            .select("*, rooms(room_number, block)")
+            .select("*, rooms(room_number, block), profiles(avatar_url)")
             .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -56,7 +59,7 @@ export const studentService = {
     async getStudentById(id: number) {
         const { data, error } = await supabase
             .from("students")
-            .select("*, rooms(room_number, block)")
+            .select("*, rooms(room_number, block), profiles(avatar_url)")
             .eq("id", id)
             .single();
 
@@ -68,7 +71,7 @@ export const studentService = {
         // 1. First try by exact profile_id match
         const { data, error } = await supabase
             .from("students")
-            .select("*, rooms(room_number, block)")
+            .select("*, rooms(room_number, block), profiles(avatar_url)")
             .eq("profile_id", profileId)
             .maybeSingle();
 
@@ -79,7 +82,7 @@ export const studentService = {
         if (user?.email) {
             const { data: emailData, error: emailError } = await supabase
                 .from("students")
-                .select("*, rooms(room_number, block)")
+                .select("*, rooms(room_number, block), profiles(avatar_url)")
                 .eq("email", user.email)
                 .is("profile_id", null)
                 .maybeSingle();

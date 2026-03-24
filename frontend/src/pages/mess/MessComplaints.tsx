@@ -16,9 +16,10 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
     DialogFooter,
 } from "@/components/ui/dialog";
-import { MessageSquare, CheckCircle, Loader2 } from "lucide-react";
+import { MessageSquare, CheckCircle, Loader2, Trash2 } from "lucide-react";
 import { complaintService, Complaint } from "@/services/complaintService";
 import { supabase } from "@/lib/supabase";
 
@@ -27,13 +28,18 @@ const MessComplaints = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
     const [responseText, setResponseText] = useState("");
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [complaintIdToDelete, setComplaintIdToDelete] = useState<number | null>(null);
 
     const loadComplaints = useCallback(async () => {
         try {
             setIsLoading(true);
             const allComplaints = await complaintService.fetchComplaints();
             // Filter for 'Mess' or 'Other' (assuming 'Other' is often used for mess if 'Mess' category is new)
-            const messComplaints = allComplaints.filter(c => c.category === 'Mess' || c.category === 'Other');
+            const messComplaints = allComplaints.filter(c => 
+                c.category?.toLowerCase() === 'mess' || 
+                c.category?.toLowerCase() === 'other'
+            );
             setComplaints(messComplaints);
         } catch (error) {
             console.error("Error loading complaints:", error);
@@ -78,6 +84,24 @@ const MessComplaints = () => {
                 console.error("Failed to resolve complaint:", error);
                 toast.error("Failed to resolve complaint");
             }
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!complaintIdToDelete) return;
+
+        try {
+            const { error } = await complaintService.deleteComplaint(complaintIdToDelete);
+            if (error) throw error;
+            
+            toast.success("Complaint deleted successfully");
+            loadComplaints();
+        } catch (error: any) {
+            console.error("Failed to delete complaint:", error);
+            toast.error(`Delete failed: ${error.message || "Unauthorized"}`);
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setComplaintIdToDelete(null);
         }
     };
 
@@ -128,21 +152,35 @@ const MessComplaints = () => {
                                 <p className="font-semibold text-sm mb-1">{complaint.title}</p>
                                 <p className="text-sm text-muted-foreground">{complaint.description}</p>
                             </CardContent>
-                            <CardFooter className="pt-0">
+                            <CardFooter className="pt-0 gap-2">
                                 {complaint.status !== "Resolved" ? (
                                     <Button
-                                        className="w-full"
+                                        className="flex-1"
                                         variant="outline"
                                         size="sm"
                                         onClick={() => setSelectedComplaint(complaint)}
                                     >
-                                        <MessageSquare className="h-4 w-4 mr-2" /> Reply & Resolve
+                                        <MessageSquare className="h-4 w-4 mr-2" /> Reply
                                     </Button>
                                 ) : (
-                                    <div className="flex items-center justify-center w-full text-sm text-success font-medium">
+                                    <div className="flex items-center justify-center flex-1 text-sm text-success font-medium">
                                         <CheckCircle className="h-4 w-4 mr-2" /> Resolved
                                     </div>
                                 )}
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 px-2"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setComplaintIdToDelete(complaint.id);
+                                        setIsDeleteDialogOpen(true);
+                                    }}
+                                    title="Delete Complaint"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
                             </CardFooter>
                         </Card>
                     ))
@@ -153,6 +191,9 @@ const MessComplaints = () => {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Respond to Complaint</DialogTitle>
+                        <DialogDescription>
+                            Review the student's complaint and provide a resolution response.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="p-3 bg-muted rounded-md text-sm border border-border">
@@ -175,6 +216,28 @@ const MessComplaints = () => {
                             Cancel
                         </Button>
                         <Button onClick={handleResolve}>Mark as Resolved</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-red-600">
+                            <Trash2 className="h-5 w-5" />
+                            Confirm Deletion
+                        </DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this complaint? This will permanently remove the record from the database.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleDelete}>
+                            Delete
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

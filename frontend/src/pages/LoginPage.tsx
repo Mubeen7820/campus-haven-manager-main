@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, UserRole } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -34,31 +34,49 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showLogin, setShowLogin] = useState(false);
-  const { login, logout } = useAuth();
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const { user, isAuthenticated, login, logout } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
+  // Handle redirect if already logged in (but not while trying to login with different credentials)
+  useEffect(() => {
+    if (isAuthenticated && !isLoggingIn && !error && user) {
+      const paths: Record<UserRole, string> = { admin: "/admin", student: "/student", mess_staff: "/mess" };
+      navigate(paths[user.role]);
+    }
+  }, [isAuthenticated, isLoggingIn, error, user, navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsLoggingIn(true);
 
-    const { role: userRole, error: loginError } = await login(email, password);
+    try {
+      const { role: userRole, error: loginError } = await login(email, password);
 
-    if (loginError) {
-      setError(loginError.message || "Incorrect email or password");
-      return;
+      if (loginError) {
+        setError(loginError.message || "Incorrect email or password");
+        setIsLoggingIn(false);
+        return;
+      }
+
+      if (userRole !== selectedRole) {
+        const roleNames = { student: "Student", admin: "Admin", mess_staff: "Mess Staff" };
+        setError(`Unauthorized: Your account is not registered as ${roleNames[selectedRole]}. Please select the correct role.`);
+        await logout();
+        setIsLoggingIn(false);
+        return;
+      }
+
+      const paths: Record<UserRole, string> = { admin: "/admin", student: "/student", mess_staff: "/mess" };
+      navigate(paths[userRole]);
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoggingIn(false);
     }
-
-    if (userRole !== selectedRole) {
-      const roleNames = { student: "Student", admin: "Admin", mess_staff: "Mess Staff" };
-      setError(`Unauthorized: Your account is not registered as ${roleNames[selectedRole]}. Please select the correct role.`);
-      await logout();
-      return;
-    }
-
-    const paths: Record<UserRole, string> = { admin: "/admin", student: "/student", mess_staff: "/mess" };
-    navigate(paths[userRole]);
   };
 
   return (
@@ -227,7 +245,8 @@ const LoginPage = () => {
                     )}
                     <button
                       type="submit"
-                      className="relative w-full p-[1.5px] rounded-xl overflow-hidden group shadow-lg transition-all hover:scale-[1.02]"
+                      disabled={isLoggingIn}
+                      className="relative w-full p-[1.5px] rounded-xl overflow-hidden group shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <div
                         className="absolute inset-0"
@@ -237,9 +256,14 @@ const LoginPage = () => {
                         }}
                       />
                       <span className="relative z-10 w-full text-xl py-5 bg-[#1e293b] text-white rounded-xl flex items-center justify-center gap-2 group-hover:bg-[#0f172a] transition-all font-black tracking-wide">
-                        LOGIN <ArrowRight className="w-6 h-6 ml-2" />
+                        {isLoggingIn ? "LOGGING IN..." : "LOGIN"} <ArrowRight className="w-6 h-6 ml-2" />
                       </span>
                     </button>
+                    {isLoggingIn && (
+                      <div className="flex justify-center mt-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                      </div>
+                    )}
                   </form>
                 </motion.div>
               )}
