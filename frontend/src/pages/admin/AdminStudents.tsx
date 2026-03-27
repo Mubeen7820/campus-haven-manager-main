@@ -170,9 +170,10 @@ const AdminStudents = () => {
 
             toast.success("Student profile photo updated successfully!");
             await loadData(); 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
-            toast.error("Failed to upload photo: " + (err.message || ''));
+            const errorMessage = err instanceof Error ? err.message : "Failed to upload photo";
+            toast.error("Failed to upload photo: " + errorMessage);
         } finally {
             setUploadingAvatar(false);
             if (fileInputRef.current) fileInputRef.current.value = "";

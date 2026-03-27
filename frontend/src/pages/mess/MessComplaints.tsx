@@ -96,9 +96,10 @@ const MessComplaints = () => {
             
             toast.success("Complaint deleted successfully");
             loadComplaints();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Failed to delete complaint:", error);
-            toast.error(`Delete failed: ${error.message || "Unauthorized"}`);
+            const errorMessage = error instanceof Error ? error.message : "Unauthorized";
+            toast.error(`Delete failed: ${errorMessage}`);
         } finally {
             setIsDeleteDialogOpen(false);
             setComplaintIdToDelete(null);

@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Capitalize first letter
       parsedEmailName = parsedEmailName.charAt(0).toUpperCase() + parsedEmailName.slice(1);
 
-      let rawName = data?.full_name || authUser?.user_metadata?.full_name;
+      const rawName = data?.full_name || authUser?.user_metadata?.full_name;
       
       let displayName = rawName;
       const cleanName = rawName?.trim().toLowerCase() || "";

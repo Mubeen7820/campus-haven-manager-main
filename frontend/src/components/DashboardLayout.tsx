@@ -15,7 +15,7 @@ const DashboardLayout = () => {
           <div className="flex items-center justify-between">
             <div className="lg:hidden w-10" /> {/* spacer for mobile menu button */}
             <h2 className="text-2xl font-black text-slate-900 hidden lg:block tracking-tight">
-              Welcome back, <span className="text-orange-500 font-black">{user?.name?.split(" ")[0]}</span>
+              Welcome back, <span className="text-orange-500 font-black">{user?.name}</span>
             </h2>
             <div className="flex items-center gap-4">
               <button className="relative p-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors group">

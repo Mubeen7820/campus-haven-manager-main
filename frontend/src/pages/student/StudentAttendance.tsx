@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { messService, MessAttendance } from "@/services/messService";
 import { studentService } from "@/services/studentService";
@@ -12,17 +12,17 @@ import { supabase } from "@/lib/supabase";
 const StudentAttendance = () => {
     const { user } = useAuth();
     const [attendance, setAttendance] = useState<MessAttendance[]>([]);
-    const [studentData, setStudentData] = useState<any>(null);
+    const [studentData, setStudentData] = useState<Record<string, any> | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
 
-    const loadAttendance = async () => {
+    const loadAttendance = useCallback(async () => {
         try {
             if (!user) return;
             setIsLoading(true);
 
             // 1. Get student ID from profile (Proactive check)
-            let student = await studentService.getStudentByProfileId(user.id);
+            const student = await studentService.getStudentByProfileId(user.id);
             
             if (student) {
                 setStudentData(student);
@@ -39,7 +39,7 @@ const StudentAttendance = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [user]);
 
     useEffect(() => {
         loadAttendance();
@@ -58,7 +58,7 @@ const StudentAttendance = () => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [user]);
+    }, [loadAttendance]);
 
     const filteredAttendance = attendance.filter(item => 
         item.meal_type.toLowerCase().includes(searchTerm.toLowerCase()) ||

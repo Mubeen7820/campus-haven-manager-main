@@ -160,9 +160,10 @@ const AppSidebar = () => {
       await refreshProfile();
       toast.success("Profile details updated!");
       setIsEditingProfile(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to update profile";
       console.error(err);
-      toast.error(err.message || "Failed to update profile");
+      toast.error(errorMessage);
     } finally {
       setSavingProfile(false);
     }

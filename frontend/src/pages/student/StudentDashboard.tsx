@@ -155,11 +155,11 @@ const StudentDashboard = () => {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-white">
-                <th className="text-left py-5 px-8 text-[11px] font-black text-slate-400 uppercase tracking-[0.15em]">Day</th>
-                <th className="text-left py-5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-[0.15em]">Breakfast</th>
-                <th className="text-left py-5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-[0.15em]">Lunch</th>
-                <th className="text-left py-5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-[0.15em]">Dinner</th>
+              <tr className="bg-slate-50/80">
+                <th className="text-left py-5 px-8 text-sm font-black text-slate-900 uppercase tracking-widest border-b-2 border-slate-200">Day</th>
+                <th className="text-left py-5 px-6 text-sm font-black text-slate-900 uppercase tracking-widest border-b-2 border-slate-200">Breakfast</th>
+                <th className="text-left py-5 px-6 text-sm font-black text-slate-900 uppercase tracking-widest border-b-2 border-slate-200">Lunch</th>
+                <th className="text-left py-5 px-6 text-sm font-black text-slate-900 uppercase tracking-widest border-b-2 border-slate-200">Dinner</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">

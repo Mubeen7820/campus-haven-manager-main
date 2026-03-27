@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, UserRole } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { GraduationCap, ShieldCheck, UtensilsCrossed, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { GraduationCap, ShieldCheck, UtensilsCrossed, ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import BlurText from "@/components/BlurText";
@@ -256,14 +256,15 @@ const LoginPage = () => {
                         }}
                       />
                       <span className="relative z-10 w-full text-xl py-5 bg-[#1e293b] text-white rounded-xl flex items-center justify-center gap-2 group-hover:bg-[#0f172a] transition-all font-black tracking-wide">
-                        {isLoggingIn ? "LOGGING IN..." : "LOGIN"} <ArrowRight className="w-6 h-6 ml-2" />
+                        {isLoggingIn ? (
+                          <Loader2 className="w-6 h-6 animate-spin text-white" />
+                        ) : (
+                          <>
+                            LOGIN <ArrowRight className="w-6 h-6 ml-2" />
+                          </>
+                        )}
                       </span>
                     </button>
-                    {isLoggingIn && (
-                      <div className="flex justify-center mt-4">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                      </div>
-                    )}
                   </form>
                 </motion.div>
               )}
