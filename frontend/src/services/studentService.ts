@@ -147,10 +147,26 @@ export const studentService = {
             .single();
 
         if (error) throw error;
+
+        // Synchronize room occupancy
+        if (data.room_id) {
+            const { error: rpcError } = await supabase.rpc('increment_occupancy', { room_id: data.room_id });
+            if (rpcError) {
+                // Fallback if RPC isn't available or fails
+                const { data: room } = await supabase.from('rooms').select('current_occupancy').eq('id', data.room_id).single();
+                if (room) {
+                    await supabase.from('rooms').update({ current_occupancy: (room.current_occupancy || 0) + 1 }).eq('id', data.room_id);
+                }
+            }
+        }
+
         return data;
     },
 
     async updateStudent(id: number, updates: Partial<Student>) {
+        // Get old student data to check for room change
+        const { data: oldStudent } = await supabase.from('students').select('room_id').eq('id', id).single();
+
         const { data, error } = await supabase
             .from("students")
             .update(updates)
@@ -159,15 +175,45 @@ export const studentService = {
             .single();
 
         if (error) throw error;
+
+        // Handle room occupancy change if needed
+        if (oldStudent && updates.room_id !== undefined && updates.room_id !== oldStudent.room_id) {
+            // Decrement old
+            if (oldStudent.room_id) {
+                const { data: oldRoom } = await supabase.from('rooms').select('current_occupancy').eq('id', oldStudent.room_id).single();
+                if (oldRoom) {
+                    await supabase.from('rooms').update({ current_occupancy: Math.max(0, (oldRoom.current_occupancy || 0) - 1) }).eq('id', oldStudent.room_id);
+                }
+            }
+            // Increment new
+            if (updates.room_id) {
+                const { data: newRoom } = await supabase.from('rooms').select('current_occupancy').eq('id', updates.room_id).single();
+                if (newRoom) {
+                    await supabase.from('rooms').update({ current_occupancy: (newRoom.current_occupancy || 0) + 1 }).eq('id', updates.room_id);
+                }
+            }
+        }
+
         return data;
     },
 
     async deleteStudent(id: number) {
+        // Get student data first to update room occupancy
+        const { data: student } = await supabase.from('students').select('room_id').eq('id', id).single();
+
         const { error } = await supabase
             .from("students")
             .delete()
             .eq("id", id);
 
         if (error) throw error;
+
+        // Decrement room occupancy
+        if (student?.room_id) {
+            const { data: room } = await supabase.from('rooms').select('current_occupancy').eq('id', student.room_id).single();
+            if (room) {
+                await supabase.from('rooms').update({ current_occupancy: Math.max(0, (room.current_occupancy || 0) - 1) }).eq('id', student.room_id);
+            }
+        }
     }
 };

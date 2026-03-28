@@ -84,7 +84,7 @@ const LoginPage = () => {
       className="min-h-screen flex flex-col bg-slate-950 overflow-y-auto"
     >
       <div
-        className="min-h-screen w-full flex items-center p-8 lg:p-24 relative bg-cover bg-center"
+        className="min-h-screen w-full flex flex-col pt-8 lg:pt-10 pb-8 lg:pb-24 px-8 lg:px-24 relative bg-cover bg-center"
         style={{ backgroundImage: "url('/login-bg.jpg')" }}
       >
         <div className={`absolute inset-0 transition-all duration-1000 ${showLogin ? "bg-black/75 backdrop-blur-[2px]" : "bg-black/30"}`} />
@@ -114,27 +114,24 @@ const LoginPage = () => {
             </button>
           </motion.div>
         )}
+        <div className="relative z-10 w-full flex flex-col lg:flex-row items-start justify-between gap-12 mt-4 lg:mt-6">
 
-        <div className="relative z-10 w-full h-full flex flex-col lg:flex-row items-center justify-between gap-12">
-
-          {/* Left Side: Hero Info */}
+          {/* Left Side: Hero Info - Positioned in the absolute upper-left (cloud area) */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
-            className="lg:w-1/2 text-white text-center lg:text-left"
+            className="lg:w-1/2 text-white text-center lg:text-left self-start mt-0"
           >
-            <div className="flex items-center justify-center lg:justify-start mb-6">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-extrabold mb-4 text-white leading-tight tracking-tight mt-0 flex flex-wrap items-center justify-center lg:justify-start">
               <img
                 src="/aurora-logo.png"
-                alt="Aurora's Hostel Logo"
-                className="w-16 h-16 object-contain opacity-90"
+                alt="Aurora's Logo"
+                className="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 object-contain opacity-95 hover:scale-110 transition-transform cursor-pointer inline-block -mt-1 mr-1"
+                onClick={() => navigate("/")}
               />
-            </div>
-
-            <h1 className="text-4xl lg:text-6xl font-extrabold mb-6 text-white leading-[1.1] tracking-tight">
               <AuroraText speed={1} colors={["#FFFFFF", "#38BDF8", "#BD4733", "#FFFFFF", "#195DBA"]}>
-                Aurora's Hostel & Mess System
+                urora's Hostel & Mess System
               </AuroraText>
             </h1>
 
