@@ -1,0 +1,8 @@
+user: ERROR Could not find the table 'public.user' in the schema cache
+users: ERROR Could not find the table 'public.users' in the schema cache
+User: ERROR Could not find the table 'public.User' in the schema cache
+Users: ERROR Could not find the table 'public.Users' in the schema cache
+profiles: SUCCESS
+students: SUCCESS
+rooms: SUCCESS
+blocks: SUCCESS

@@ -66,7 +66,7 @@ const AdminDashboard = () => {
         // Calculate Stats
         const totalStudents = students.length;
         const totalRooms = rooms.reduce((acc, r) => acc + r.capacity, 0); // Capacity based
-        const occupied = rooms.reduce((acc, r) => acc + (r.current_occupancy || 0), 0);
+        const occupied = students.filter(s => s.room_id).length;
 
         const totalPayments = payments
           .filter(p => p.status === 'Paid')

@@ -69,7 +69,7 @@ const MessComplaints = () => {
             try {
                 // We're using the status update, but in the future we might want to store the response too
                 // For now, we'll just update the status to 'Resolved'
-                await complaintService.updateComplaintStatus(selectedComplaint.id, 'Resolved');
+                await complaintService.updateComplaintStatus(selectedComplaint.id, 'Resolved', responseText);
 
                 toast.success("Complaint resolved successfully");
                 setSelectedComplaint(null);

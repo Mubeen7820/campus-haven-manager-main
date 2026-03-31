@@ -32,6 +32,8 @@ const AdminBlocks = () => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState<Omit<Block, "id">>({
@@ -120,14 +122,25 @@ const AdminBlocks = () => {
         setFormData({ name: "", type: "Boys", floors: 1, warden: "", contact: "" });
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm("Are you sure you want to remove this block?")) return;
+    const handleDelete = async (id: number | string | undefined) => {
+        if (!id) return;
+        setDeleteId(Number(id));
+        setIsDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
+
         try {
-            await blockService.deleteBlock(id);
+            await blockService.deleteBlock(deleteId);
             toast.success("Block removed successfully");
-        } catch (error) {
+            setIsDeleteDialogOpen(false);
+            setDeleteId(null);
+            await loadBlocks();
+        } catch (error: any) {
             console.error("Error deleting block:", error);
-            toast.error("Failed to delete block");
+            toast.error(`Failed to delete block: ${error?.message || "Unknown error"}`);
+            setIsDeleteDialogOpen(false);
         }
     };
 
@@ -229,6 +242,22 @@ const AdminBlocks = () => {
                         </form>
                     </DialogContent>
                 </Dialog>
+
+                {/* Custom Delete Confirmation Dialog */}
+                <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <DialogContent className="max-w-[400px]">
+                        <DialogHeader>
+                            <DialogTitle className="text-xl font-bold text-slate-900">Delete Block?</DialogTitle>
+                            <DialogDescription className="pt-2 text-slate-500 font-medium">
+                                Are you sure you want to remove this block? This will remove all block-specific data.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="mt-6 flex gap-3">
+                            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} className="flex-1 rounded-xl">Cancel</Button>
+                            <Button variant="destructive" onClick={confirmDelete} className="flex-1 rounded-xl bg-red-600 hover:bg-red-700">Delete Block</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             {/* Data Table Container */}
@@ -288,10 +317,15 @@ const AdminBlocks = () => {
                                                     <Edit className="h-4 w-4" />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDelete(block.id)}
-                                                    className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all border border-slate-100 hover:border-red-100"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(block.id);
+                                                    }}
+                                                    type="button"
+                                                    className="relative z-30 p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all border border-slate-100 hover:border-red-100 cursor-pointer shadow-sm"
+                                                    title="Delete Block"
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <Trash2 className="h-4 w-4 pointer-events-none" />
                                                 </button>
                                             </div>
                                         </td>

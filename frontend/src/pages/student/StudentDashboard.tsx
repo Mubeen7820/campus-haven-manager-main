@@ -3,7 +3,7 @@ import { BedDouble, UtensilsCrossed, CreditCard, FileText, Clock, ArrowUpRight, 
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
-import { messService, MessMenu } from "@/services/messService";
+import { messService, MessMenu, MessAttendance } from "@/services/messService";
 import { studentService, Student } from "@/services/studentService";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ const StudentDashboard = () => {
   const { user } = useAuth();
   const [menu, setMenu] = useState<MessMenu[]>([]);
   const [studentData, setStudentData] = useState<Student | null>(null);
+  const [attendanceLogs, setAttendanceLogs] = useState<MessAttendance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadData = useCallback(async () => {
@@ -26,6 +27,11 @@ const StudentDashboard = () => {
       ]);
       setMenu(menuData);
       setStudentData(sData);
+
+      if (sData?.id) {
+        const attendance = await messService.fetchStudentAttendance(sData.id);
+        setAttendanceLogs(attendance);
+      }
     } catch (error) {
       console.error("Failed to load dashboard data:", error);
       toast.error("Failed to load dashboard data");
@@ -36,13 +42,24 @@ const StudentDashboard = () => {
 
   useEffect(() => {
     loadData();
-    const subscription = supabase
+    const menuSubscription = supabase
       .channel('mess_menu_changes_dashboard')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'mess_menu' }, () => {
         loadData();
       })
       .subscribe();
-    return () => { subscription.unsubscribe(); };
+
+    const attendanceSubscription = supabase
+      .channel('mess_attendance_changes_dashboard')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mess_attendance' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    return () => { 
+      menuSubscription.unsubscribe(); 
+      attendanceSubscription.unsubscribe();
+    };
   }, [user?.id, loadData]);
 
   const getMenuItems = (day: string, meal: string) => {
@@ -56,13 +73,14 @@ const StudentDashboard = () => {
         <div>
           <h1 className="text-3xl font-extrabold text-[#0f172a] tracking-tight">Student Dashboard</h1>
           <p className="text-slate-500 font-medium mt-1">
-            Welcome back, <span className="text-orange-600 font-bold">{user?.name}</span> 👋 
-            <span className="hidden sm:inline"> Here's what's happening in your hostel.</span>
+            Welcome back, <span className="text-orange-600 font-bold">{user?.name}</span>
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 uppercase tracking-wider">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          System Live
+        <div className="flex flex-col items-end gap-2 text-[10px] font-bold text-slate-400">
+          <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 uppercase tracking-wider">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            System Live
+          </div>
         </div>
       </div>
 
@@ -155,11 +173,11 @@ const StudentDashboard = () => {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-white">
-                <th className="text-left py-5 px-8 text-[11px] font-black text-slate-400 uppercase tracking-[0.15em]">Day</th>
-                <th className="text-left py-5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-[0.15em]">Breakfast</th>
-                <th className="text-left py-5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-[0.15em]">Lunch</th>
-                <th className="text-left py-5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-[0.15em]">Dinner</th>
+              <tr className="bg-slate-50/50">
+                <th className="text-left py-5 px-8 text-[12px] font-black text-[#0f172a] uppercase tracking-widest border-b border-slate-100">Day</th>
+                <th className="text-left py-5 px-6 text-[12px] font-black text-[#0f172a] uppercase tracking-widest border-b border-slate-100">Breakfast</th>
+                <th className="text-left py-5 px-6 text-[12px] font-black text-[#0f172a] uppercase tracking-widest border-b border-slate-100">Lunch</th>
+                <th className="text-left py-5 px-6 text-[12px] font-black text-[#0f172a] uppercase tracking-widest border-b border-slate-100">Dinner</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -206,6 +224,77 @@ const StudentDashboard = () => {
                     </tr>
                   );
                 })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
+
+      {/* Attendance History */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-8 py-6 border-b border-slate-50 bg-slate-50/30">
+          <div>
+            <h3 className="text-xl font-bold text-[#0f172a]">Recent Meal Attendance</h3>
+            <p className="text-sm text-slate-400 font-medium mt-0.5">Confirmation of meals marked by mess staff</p>
+          </div>
+          <div className="mt-4 sm:mt-0 flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-2xl text-xs font-bold shadow-lg shadow-emerald-500/20">
+            <Activity className="w-4 h-4" />
+            Verified Records
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-slate-50/50">
+                <th className="text-left py-5 px-8 text-[12px] font-black text-[#0f172a] uppercase tracking-widest border-b border-slate-100">Date & Time</th>
+                <th className="text-left py-5 px-6 text-[12px] font-black text-[#0f172a] uppercase tracking-widest border-b border-slate-100">Meal Type</th>
+                <th className="text-left py-5 px-6 text-[12px] font-black text-[#0f172a] uppercase tracking-widest border-b border-slate-100">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {isLoading ? (
+                <tr>
+                   <td colSpan={3} className="text-center py-10">
+                     <div className="flex justify-center">
+                        <div className="w-6 h-6 border-2 border-orange-500/20 border-t-orange-500 rounded-full animate-spin" />
+                     </div>
+                   </td>
+                </tr>
+              ) : attendanceLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="py-10 text-center text-slate-400 font-medium italic">
+                    No attendance records found.
+                  </td>
+                </tr>
+              ) : (
+                attendanceLogs.slice(0, 10).map((log) => (
+                  <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="py-5 px-8">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-slate-700">
+                          {new Date(log.marked_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                        <span className="text-[11px] font-medium text-slate-400">
+                          {new Date(log.marked_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-5 px-6">
+                      <span className="text-sm font-black text-slate-900">{log.meal_type}</span>
+                    </td>
+                    <td className="py-5 px-6">
+                      <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                        Marked
+                      </span>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

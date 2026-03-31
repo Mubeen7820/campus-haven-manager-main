@@ -293,6 +293,7 @@ const AppSidebar = () => {
             <NavLink
               key={item.path}
               to={item.path}
+              end
               onClick={() => setMobileOpen(false)}
               className={({ isActive }) => `flex items-center px-4 py-3 rounded-xl text-[15px] font-bold transition-all duration-300 group ${isActive
                 ? "bg-orange-50 text-orange-600 shadow-sm"

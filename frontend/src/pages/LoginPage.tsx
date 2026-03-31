@@ -10,6 +10,7 @@ import { AuroraText } from "@/components/AuroraText";
 import Footer from "@/components/Footer";
 import LogoLoop from "@/components/LogoLoop";
 import Particles from "@/components/Particles";
+import { supabase } from "@/lib/supabase";
 const featureLogos = [
   { node: <div className="flex items-center gap-6 whitespace-nowrap"><span className="text-6xl">🍽️</span> <span className="text-3xl font-bold text-slate-700">Smart Mess</span></div>, title: "Smart Mess" },
   { node: <div className="flex items-center gap-6 whitespace-nowrap"><span className="text-6xl">🏠</span> <span className="text-3xl font-bold text-slate-700">Room Hub</span></div>, title: "Room Hub" },
@@ -66,7 +67,7 @@ const LoginPage = () => {
       className="min-h-screen flex flex-col bg-slate-950 overflow-y-auto"
     >
       <div
-        className="min-h-screen w-full flex items-center p-8 lg:p-24 relative bg-cover bg-center"
+        className="min-h-screen w-full flex p-8 lg:p-16 relative bg-cover bg-center"
         style={{ backgroundImage: "url('/login-bg.jpg')" }}
       >
         <div className={`absolute inset-0 transition-all duration-1000 ${showLogin ? "bg-black/75 backdrop-blur-[2px]" : "bg-black/30"}`} />
@@ -97,26 +98,23 @@ const LoginPage = () => {
           </motion.div>
         )}
 
-        <div className="relative z-10 w-full h-full flex flex-col lg:flex-row items-center justify-between gap-12">
+        <div className="relative z-10 w-full flex-1 flex flex-col lg:flex-row justify-between gap-12">
 
           {/* Left Side: Hero Info */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
-            className="lg:w-1/2 text-white text-center lg:text-left"
+            className="lg:w-1/2 text-white text-center lg:text-left self-start lg:mt-8"
           >
-            <div className="flex items-center justify-center lg:justify-start mb-6">
+            <h1 className="text-4xl lg:text-[54px] xl:text-[64px] font-extrabold mb-6 text-white leading-[1.1] tracking-tight text-center lg:text-left drop-shadow-xl">
               <img
                 src="/aurora-logo.png"
-                alt="Aurora's Hostel Logo"
-                className="w-16 h-16 object-contain opacity-90"
+                alt="A"
+                className="h-[0.95em] w-auto inline-block -mr-[0.05em] align-baseline"
               />
-            </div>
-
-            <h1 className="text-4xl lg:text-6xl font-extrabold mb-6 text-white leading-[1.1] tracking-tight">
               <AuroraText speed={1} colors={["#FFFFFF", "#38BDF8", "#BD4733", "#FFFFFF", "#195DBA"]}>
-                Aurora's Hostel & Mess System
+                urora's Hostel & Mess System
               </AuroraText>
             </h1>
 
@@ -143,7 +141,7 @@ const LoginPage = () => {
           </motion.div>
 
           {/* Right Side: Login Card */}
-          <div className="w-full lg:w-5/12 flex items-center justify-center">
+          <div className="w-full lg:w-5/12 flex items-center justify-center self-center">
             <AnimatePresence>
               {showLogin && (
                 <motion.div

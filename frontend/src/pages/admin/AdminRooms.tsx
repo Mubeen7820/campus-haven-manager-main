@@ -24,14 +24,18 @@ import { Plus, Search, Edit, Trash2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { toast } from "sonner";
 import { roomService, Room } from "@/services/roomService";
+import { studentService, Student } from "@/services/studentService";
 import { supabase } from "@/lib/supabase";
 
 const AdminRooms = () => {
     const [rooms, setRooms] = useState<Room[]>([]);
+    const [students, setStudents] = useState<Student[]>([]);
     const [search, setSearch] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -60,11 +64,15 @@ const AdminRooms = () => {
 
     const loadRooms = async () => {
         try {
-            const data = await roomService.fetchRooms();
-            setRooms(data);
+            const [rData, sData] = await Promise.all([
+                roomService.fetchRooms(),
+                studentService.fetchStudents()
+            ]);
+            setRooms(rData);
+            setStudents(sData);
         } catch (error) {
-            console.error("Failed to load rooms:", error);
-            toast.error("Failed to load rooms");
+            console.error("Failed to load data:", error);
+            toast.error("Failed to load room data");
         } finally {
             setIsLoading(false);
         }
@@ -147,16 +155,26 @@ const AdminRooms = () => {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm("Are you sure you want to delete this room? This may fail if students are currently assigned to it.")) return;
+    const handleDelete = async (id: number | string | undefined) => {
+        if (!id) return;
+        setDeleteId(Number(id));
+        setIsDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
+        
         try {
-            await roomService.deleteRoom(id);
-            toast.success("Room deleted successfully");
-            loadRooms();
-        } catch (error: unknown) {
-            console.error("Error deleting room:", error);
-            const errorMessage = error instanceof Error ? error.message : "Failed to delete room";
-            toast.error(errorMessage);
+            await roomService.deleteRoom(deleteId);
+            toast.success("Room removed from directory successfully.");
+            setIsDeleteDialogOpen(false);
+            setDeleteId(null);
+            await loadRooms();
+        } catch (error: any) {
+            console.error("Critical error deleting room:", error);
+            const msg = error?.message || "Deletion failed. Ensure no foreign constraints exist.";
+            toast.error(`Deletion failed: ${msg}`);
+            setIsDeleteDialogOpen(false);
         }
     };
 
@@ -276,6 +294,22 @@ const AdminRooms = () => {
                         </form>
                     </DialogContent>
                 </Dialog>
+
+                {/* Custom Delete Confirmation Dialog */}
+                <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <DialogContent className="max-w-[400px]">
+                        <DialogHeader>
+                            <DialogTitle className="text-xl font-bold text-slate-900">Delete Room?</DialogTitle>
+                            <DialogDescription className="pt-2 text-slate-500 font-medium">
+                                This action will permanently remove this room record. Students assigned to this room will be unassigned.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="mt-6 flex gap-3">
+                            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} className="flex-1 rounded-xl">Cancel</Button>
+                            <Button variant="destructive" onClick={confirmDelete} className="flex-1 rounded-xl bg-red-600 hover:bg-red-700">Delete Room</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             {/* Data Table */}
@@ -312,28 +346,30 @@ const AdminRooms = () => {
                                     <td colSpan={6} className="py-12 text-center text-slate-400 font-bold italic">No rooms located in this search.</td>
                                 </tr>
                             ) : (
-                                filteredRooms.map((room) => (
-                                    <tr key={room.id} className="group hover:bg-slate-50/50 transition-colors">
-                                        <td className="py-5 px-8 font-bold text-[#0f172a]">{room.room_number}</td>
-                                        <td className="py-5 px-6">
-                                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-tighter bg-slate-100 px-2 py-1 rounded-lg">{room.block}</span>
-                                        </td>
-                                        <td className="py-5 px-6 font-medium text-slate-500">{room.type}</td>
-                                        <td className="py-5 px-6">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                    <div 
-                                                        className={`h-full transition-all duration-500 rounded-full ${
-                                                            (room.current_occupancy || 0) >= room.capacity ? 'bg-amber-500' : 'bg-blue-500'
-                                                        }`}
-                                                        style={{ width: `${((room.current_occupancy || 0) / room.capacity) * 100}%` }}
-                                                    />
+                                filteredRooms.map((room) => {
+                                    const curOcc = students.filter(s => s.room_id === room.id).length;
+                                    return (
+                                        <tr key={room.id} className="group hover:bg-slate-50/50 transition-colors">
+                                            <td className="py-5 px-8 font-bold text-[#0f172a]">{room.room_number}</td>
+                                            <td className="py-5 px-6">
+                                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-tighter bg-slate-100 px-2 py-1 rounded-lg">{room.block}</span>
+                                            </td>
+                                            <td className="py-5 px-6 font-medium text-slate-500">{room.type}</td>
+                                            <td className="py-5 px-6">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className={`h-full transition-all duration-500 rounded-full ${
+                                                                curOcc >= room.capacity ? 'bg-amber-500' : 'bg-blue-500'
+                                                            }`}
+                                                            style={{ width: `${(curOcc / room.capacity) * 100}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-xs font-black text-slate-400 tracking-tighter">
+                                                        {curOcc} / {room.capacity}
+                                                    </span>
                                                 </div>
-                                                <span className="text-xs font-black text-slate-400 tracking-tighter">
-                                                    {room.current_occupancy} / {room.capacity}
-                                                </span>
-                                            </div>
-                                        </td>
+                                            </td>
                                         <td className="py-5 px-6">
                                             <span
                                                 className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border ${
@@ -354,15 +390,21 @@ const AdminRooms = () => {
                                                     <Edit className="h-4 w-4" />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDelete(room.id)}
-                                                    className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all border border-slate-100 hover:border-red-100"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(room.id);
+                                                    }}
+                                                    type="button"
+                                                    className="relative z-30 p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all border border-slate-100 hover:border-red-100 cursor-pointer shadow-sm"
+                                                    title="Delete Room"
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <Trash2 className="h-4 w-4 pointer-events-none" />
                                                 </button>
                                             </div>
                                         </td>
-                                    </tr>
-                                ))
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>

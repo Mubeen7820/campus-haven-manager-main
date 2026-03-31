@@ -41,6 +41,17 @@ export const messService = {
         return data as MessAttendance[];
     },
 
+    async fetchStudentAttendance(studentId: number) {
+        const { data, error } = await supabase
+            .from("mess_attendance")
+            .select("*")
+            .eq("student_id", studentId)
+            .order("marked_at", { ascending: false });
+
+        if (error) throw error;
+        return data as MessAttendance[];
+    },
+
     async markAttendance(admissionNo: string, mealType: string) {
         // 1. Get student ID from admission number
         const { data: student, error: studentError } = await supabase
@@ -50,6 +61,22 @@ export const messService = {
             .single();
 
         if (studentError) throw new Error("Student not found");
+
+        // 1.5 Check if already marked for this meal today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const { data: existingAttendance } = await supabase
+            .from("mess_attendance")
+            .select("id")
+            .eq("student_id", student.id)
+            .eq("meal_type", mealType)
+            .gte("marked_at", today.toISOString())
+            .limit(1);
+
+        if (existingAttendance && existingAttendance.length > 0) {
+            throw new Error(`Already marked for ${mealType} today.`);
+        }
 
         // 2. Insert attendance record
         const { data, error } = await supabase

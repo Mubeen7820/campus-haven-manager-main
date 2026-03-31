@@ -20,19 +20,24 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Edit, Trash2, RefreshCw } from "lucide-react";
+import { Plus, Search, Edit, Trash2, RefreshCw, Users, Camera } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { toast } from "sonner";
 import { studentService, Student } from "@/services/studentService";
 import { roomService } from "@/services/roomService";
+import { blockService, Block } from "@/services/blockService";
+import { supabase } from "@/lib/supabase";
 
 const AdminStudents = () => {
     const [students, setStudents] = useState<Student[]>([]);
     const [rooms, setRooms] = useState<{ id: number; room_number: string; block: string }[]>([]);
+    const [blocks, setBlocks] = useState<Block[]>([]);
     const [search, setSearch] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -46,8 +51,12 @@ const AdminStudents = () => {
         blood_group: "",
         emergency_contact: "",
         email: "",
-        password: ""
+        password: "",
+        avatar_url: ""
     });
+
+    // We store profiles to link avatars
+    const [profiles, setProfiles] = useState<Record<string, string>>({});
 
     useEffect(() => {
         loadData();
@@ -56,12 +65,22 @@ const AdminStudents = () => {
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const [sData, rData] = await Promise.all([
+            const [sData, rData, pData, bData] = await Promise.all([
                 studentService.fetchStudents(),
-                roomService.fetchRooms()
+                roomService.fetchRooms(),
+                supabase.from('profiles').select('id, avatar_url'),
+                blockService.fetchBlocks().catch(() => [] as Block[])
             ]);
             setStudents(sData);
             setRooms(rData.map(r => ({ id: r.id, room_number: r.room_number, block: r.block })));
+            setBlocks(bData);
+            
+            // Create a mapping of profile_id to avatar_url
+            const profileMap: Record<string, string> = {};
+            pData.data?.forEach(p => {
+                if (p.avatar_url) profileMap[p.id] = p.avatar_url;
+            });
+            setProfiles(profileMap);
         } catch (error: unknown) {
             console.error("Failed to load data:", error);
             toast.error("Failed to load students and rooms");
@@ -84,15 +103,15 @@ const AdminStudents = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!formData.name || !formData.room_id) {
-            toast.error("Please fill in all required fields (Name, Assigned Room)");
+        if (!formData.name) {
+            toast.error("Please fill in the student's name");
             return;
         }
 
         try {
             const studentData = {
                 name: formData.name,
-                room_id: formData.room_id,
+                room_id: formData.room_id ? Number(formData.room_id) : null,
                 admission_no: formData.admission_no || `ADM-${Date.now()}`,
                 parent_name: formData.parent_name || "Unknown",
                 parent_phone: formData.parent_phone || "",
@@ -101,11 +120,20 @@ const AdminStudents = () => {
                 blood_group: formData.blood_group || "Unknown",
                 emergency_contact: formData.emergency_contact || "",
                 email: formData.email || null,
-                password: formData.password || undefined,
+                password: formData.password || undefined
             };
 
             if (editingId) {
                 await studentService.updateStudent(editingId, studentData);
+                
+                // Update profile picture separately if modified
+                if (formData.avatar_url) {
+                    const student = students.find(s => s.id === editingId);
+                    if (student?.profile_id) {
+                        await supabase.from('profiles').update({ avatar_url: formData.avatar_url }).eq('id', student.profile_id);
+                    }
+                }
+                
                 toast.success("Student updated successfully");
             } else {
                 await studentService.createStudent({
@@ -119,7 +147,20 @@ const AdminStudents = () => {
             closeDialog();
         } catch (error: unknown) {
             console.error("Error saving student:", error);
-            const errorMessage = error instanceof Error ? error.message : "Failed to save student";
+            
+            // Refined error extraction for TypeScript safety
+            let errorMessage = "Failed to save student";
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            } else if (typeof error === 'object' && error !== null && 'message' in error) {
+                errorMessage = String((error as Record<string, unknown>).message);
+            }
+            
+            // Helpful translation for common permissions errors
+            if (errorMessage.includes("row-level security policy") || errorMessage.includes("permission denied")) {
+                errorMessage = "Access Denied: Your account doesn't have Admin permissions in the database. Please run the SQL fix script.";
+            }
+            
             toast.error(errorMessage);
         }
     };
@@ -146,7 +187,8 @@ const AdminStudents = () => {
             blood_group: "",
             emergency_contact: "",
             email: "",
-            password: generatePassword()
+            password: generatePassword(),
+            avatar_url: ""
         });
         setIsDialogOpen(true);
     };
@@ -163,7 +205,8 @@ const AdminStudents = () => {
             blood_group: student.blood_group || "",
             emergency_contact: student.emergency_contact || "",
             email: student.email || "",
-            password: ""
+            password: "",
+            avatar_url: student.profile_id ? profiles[student.profile_id] || "" : ""
         });
         setEditingId(student.id);
         setIsDialogOpen(true);
@@ -183,20 +226,44 @@ const AdminStudents = () => {
             blood_group: "",
             emergency_contact: "",
             email: "",
-            password: ""
+            password: "",
+            avatar_url: ""
         });
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm("Are you sure you want to delete this student?")) return;
+    const handleDelete = async (id: number | string | undefined) => {
+        if (!id) return;
+        setDeleteId(Number(id));
+        setIsDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
+
         try {
-            await studentService.deleteStudent(id);
-            toast.success("Student removed successfully");
-            loadData();
-        } catch (error: unknown) {
-            console.error("Error deleting student:", error);
-            toast.error("Failed to delete student");
+            await studentService.deleteStudent(deleteId);
+            toast.success("Student removed successfully.");
+            setIsDeleteDialogOpen(false);
+            setDeleteId(null);
+            await loadData();
+        } catch (error: any) {
+            console.error("Critical error deleting student:", error);
+            const msg = error?.message || "Deletion blocked by records (Complaints/Payments).";
+            toast.error(`Deletion failed: ${msg}`);
+            setIsDeleteDialogOpen(false);
         }
+    };
+    
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setFormData(prev => ({ ...prev, avatar_url: reader.result as string }));
+        };
+        reader.readAsDataURL(file);
     };
 
     return (
@@ -230,6 +297,38 @@ const AdminStudents = () => {
                             </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4 py-4">
+                            {/* Profile Picture Upload Section */}
+                            {editingId && (
+                                <div className="flex flex-col items-center justify-center space-y-4 pb-6 border-b border-slate-100">
+                                    <div className="relative">
+                                        {/* Avatar Container */}
+                                        <div className="w-28 h-28 rounded-full border-[3px] border-blue-600 p-0.5 shadow-md bg-white">
+                                            <div className="w-full h-full rounded-full overflow-hidden bg-slate-100 relative">
+                                                {formData.avatar_url ? (
+                                                    <img src={formData.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                                        <Users className="w-10 h-10" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Camera Badge over Image */}
+                                        <label className="absolute bottom-0 right-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white cursor-pointer shadow-md hover:bg-blue-700 transition-colors">
+                                            <Camera className="w-4 h-4 text-white" />
+                                            <input type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
+                                        </label>
+                                    </div>
+                                    
+                                    {/* Link Text */}
+                                    <label className="text-sm font-bold text-blue-600 hover:text-blue-700 underline cursor-pointer decoration-2 underline-offset-4">
+                                        Change Profile Photo
+                                        <input type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
+                                    </label>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="name">Full Name</Label>
@@ -260,11 +359,25 @@ const AdminStudents = () => {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="none">No Room Assigned</SelectItem>
-                                            {rooms.map(r => (
-                                                <SelectItem key={r.id} value={r.id.toString()}>
-                                                    {r.block} - Room {r.room_number}
-                                                </SelectItem>
-                                            ))}
+                                            {(() => {
+                                                // Dynamically get gender from blocks table
+                                                const blockGender: Record<string, string> = {};
+                                                blocks.forEach(b => { blockGender[b.name] = b.type; });
+                                                
+                                                const grouped: Record<string, typeof rooms> = {};
+                                                rooms.forEach(r => {
+                                                    if (!grouped[r.block]) grouped[r.block] = [];
+                                                    grouped[r.block].push(r);
+                                                });
+                                                return Object.entries(grouped).map(([block, blockRooms]) => {
+                                                    const gender = blockGender[block] || '';
+                                                    return blockRooms.map(r => (
+                                                        <SelectItem key={r.id} value={r.id.toString()}>
+                                                            {r.block} {gender ? `(${gender})` : ''} - Room {r.room_number}
+                                                        </SelectItem>
+                                                    ));
+                                                });
+                                            })()}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -329,6 +442,22 @@ const AdminStudents = () => {
                         </form>
                     </DialogContent>
                 </Dialog>
+
+                {/* Custom Delete Confirmation Dialog */}
+                <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <DialogContent className="max-w-[400px]">
+                        <DialogHeader>
+                            <DialogTitle className="text-xl font-bold text-slate-900">Remove Student?</DialogTitle>
+                            <DialogDescription className="pt-2 text-slate-500 font-medium text-sm">
+                                This action is permanent. All complaints, payments, and attendance logs for this student will be lost.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="mt-6 flex gap-3">
+                            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} className="flex-1 rounded-xl">Cancel</Button>
+                            <Button variant="destructive" onClick={confirmDelete} className="flex-1 rounded-xl bg-red-600 hover:bg-red-700">Remove Student</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             {/* Data Table Container */}
@@ -367,7 +496,20 @@ const AdminStudents = () => {
                                 filteredStudents.map((student) => (
                                     <tr key={student.id} className="group hover:bg-slate-50/50 transition-colors">
                                         <td className="py-5 px-8 font-mono text-[11px] font-black text-slate-400 uppercase tracking-wider">{student.admission_no}</td>
-                                        <td className="py-5 px-6 font-bold text-slate-700">{student.name}</td>
+                                        <td className="py-5 px-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full border border-slate-100 overflow-hidden bg-slate-50 flex-shrink-0">
+                                                    {student.profile_id && profiles[student.profile_id] ? (
+                                                        <img src={profiles[student.profile_id]} alt={student.name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                                            <Users className="w-5 h-5" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <span className="font-bold text-slate-700">{student.name}</span>
+                                            </div>
+                                        </td>
                                         <td className="py-5 px-6">
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-bold text-[#0f172a]">{student.rooms?.room_number || "Unassigned"}</span>
@@ -394,10 +536,17 @@ const AdminStudents = () => {
                                                     <Edit className="h-4 w-4" />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDelete(student.id)}
-                                                    className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all border border-slate-100 hover:border-red-100"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (window.confirm("Are you sure you want to delete this student?")) {
+                                                            handleDelete(student.id);
+                                                        }
+                                                    }}
+                                                    type="button"
+                                                    className="relative z-30 p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all border border-slate-100 hover:border-red-100 cursor-pointer shadow-sm"
+                                                    title="Delete Student"
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <Trash2 className="h-4 w-4 pointer-events-none" />
                                                 </button>
                                             </div>
                                         </td>

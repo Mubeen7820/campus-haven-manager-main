@@ -11,6 +11,7 @@ export interface Complaint {
     status: 'Pending' | 'In Progress' | 'Resolved';
     created_at: string;
     resolved_at?: string;
+    resolution_text?: string;
     students?: {
         name: string;
         room_id: number;
@@ -77,7 +78,8 @@ export const complaintService = {
         return data;
     },
 
-    async updateComplaintStatus(id: number, status: Complaint['status']) {
+    async updateComplaintStatus(id: number, status: Complaint['status'], resolution_text?: string) {
+        // resolution_text is omitted from DB updates because it does not exist in the initial schema
         const updates: { status: Complaint['status']; resolved_at?: string } = { status };
         if (status === 'Resolved') {
             updates.resolved_at = new Date().toISOString();
