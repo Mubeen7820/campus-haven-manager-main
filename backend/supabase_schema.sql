@@ -47,7 +47,7 @@ create table if not exists public.complaints (
   user_id uuid references auth.users(id),
   title text not null,
   description text,
-  category text check (category in ('Electrical', 'Plumbing', 'Furniture', 'Cleanliness', 'Other')),
+  category text check (category in ('Electrical', 'Plumbing', 'Furniture', 'Cleanliness', 'Mess', 'Other')),
   priority text check (priority in ('Low', 'Medium', 'High')),
   status text check (status in ('Pending', 'In Progress', 'Resolved')) default 'Pending',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,

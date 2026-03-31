@@ -94,5 +94,12 @@ export const complaintService = {
 
         if (error) throw error;
         return data;
+    },
+
+    async deleteComplaint(id: number) {
+        return await supabase
+            .from("complaints")
+            .delete()
+            .eq("id", id);
     }
 };

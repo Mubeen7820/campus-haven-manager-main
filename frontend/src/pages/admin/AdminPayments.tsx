@@ -234,7 +234,11 @@ const AdminPayments = () => {
                                 <Label htmlFor="status">Status</Label>
                                 <Select
                                     value={formData.status}
+<<<<<<< HEAD
                                     onValueChange={(val: Payment["status"]) => handleInputChange("status", val)}
+=======
+                                    onValueChange={(val: Payment['status']) => handleInputChange("status", val)}
+>>>>>>> 49870dd0c219e3b781f75123c9229a2548cfdac0
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select Status" />

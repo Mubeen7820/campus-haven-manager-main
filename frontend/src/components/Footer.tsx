@@ -109,7 +109,7 @@ const Footer = () => {
           <div className="pt-8 border-t border-slate-200 w-full text-center text-slate-500 text-base">
             <p>&copy; {new Date().getFullYear()} Aurora's Hostel Management. All rights reserved.</p>
             <p className="mt-1 text-sm">
-              Designed with <span className="text-red-500">&hearts;</span> by Aurora Team
+              Designed by AIML Department
             </p>
           </div>
         </div>

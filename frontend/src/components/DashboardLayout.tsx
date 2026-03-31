@@ -24,10 +24,17 @@ const DashboardLayout = () => {
               </button>
               <div className="h-8 w-[1px] bg-slate-200 mx-1" />
               <div className="flex items-center gap-3 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
-                <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-[12px] font-black text-white uppercase">
-                  {user?.role[0]}
+                <div className="w-8 h-8 rounded-full bg-orange-500 overflow-hidden shadow-sm flex items-center justify-center text-[12px] font-black text-white uppercase">
+                  {user?.avatar ? (
+                    <img src={user.avatar} alt={user?.name || "avatar"} className="w-full h-full object-cover" />
+                  ) : (
+                    user?.name ? user.name[0] : user?.role?.[0]
+                  )}
                 </div>
-                <span className="text-sm font-black text-slate-700 capitalize">{user?.role.replace("_", " ")}</span>
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-black text-slate-700 capitalize leading-none mb-1">{user?.name}</span>
+                  <span className="text-[10px] font-bold text-slate-500 leading-none capitalize">{user?.role?.replace("_", " ")}</span>
+                </div>
               </div>
             </div>
           </div>

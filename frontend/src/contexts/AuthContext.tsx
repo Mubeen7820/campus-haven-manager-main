@@ -46,7 +46,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Get updated user metadata from Auth session as backup
       const { data: { user: authUser } } = await supabase.auth.getUser();
 
-      let displayName = data?.full_name || authUser?.user_metadata?.full_name || email.split('@')[0];
+      let parsedEmailName = email.split('@')[0].split('.')[0];
+      // Capitalize first letter
+      parsedEmailName = parsedEmailName.charAt(0).toUpperCase() + parsedEmailName.slice(1);
+
+      const rawName = data?.full_name || authUser?.user_metadata?.full_name;
+      
+      let displayName = rawName;
+      const cleanName = rawName?.trim().toLowerCase() || "";
+      // If the stored name is just the role or a placeholder, fallback to parsed email
+      if (!rawName || ['mess', 'mess_staff', 'admin', 'kitchen master', 'kitchen', 'mess manager'].includes(cleanName)) {
+          displayName = parsedEmailName;
+          // Automatically fix the database record so it stops happening!
+          supabase.from('profiles').update({ full_name: parsedEmailName }).eq('id', userId).then();
+          supabase.auth.updateUser({ data: { full_name: parsedEmailName } }).catch(e => console.log(e));
+      }
       const avatarUrl = data?.avatar_url || authUser?.user_metadata?.avatar_url;
 
       // If it's a student, try to get their name from the students table

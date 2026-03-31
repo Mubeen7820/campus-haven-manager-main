@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, CheckCircle, Eye } from "lucide-react";
+import { Search, CheckCircle, Eye, Trash2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { toast } from "sonner";
 import {
@@ -35,6 +35,8 @@ const AdminComplaints = () => {
     const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Resolved">("All");
     const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [complaintIdToDelete, setComplaintIdToDelete] = useState<number | null>(null);
 
     useEffect(() => {
         loadComplaints();
@@ -76,6 +78,28 @@ const AdminComplaints = () => {
         } catch (error) {
             console.error("Failed to resolve complaint:", error);
             toast.error("Failed to resolve complaint");
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!complaintIdToDelete) return;
+
+        try {
+            const { error } = await complaintService.deleteComplaint(complaintIdToDelete);
+            if (error) throw error;
+            
+            setComplaints((prev) => prev.filter((c) => c.id !== complaintIdToDelete));
+            toast.success("Complaint deleted successfully");
+            if (selectedComplaint?.id === complaintIdToDelete) {
+                setSelectedComplaint(null);
+            }
+        } catch (error: unknown) {
+            console.error("Failed to delete complaint:", error);
+            const errorMessage = error instanceof Error ? error.message : "Unauthorized";
+            toast.error(`Delete failed: ${errorMessage}`);
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setComplaintIdToDelete(null);
         }
     };
 
@@ -192,6 +216,20 @@ const AdminComplaints = () => {
                                                     <CheckCircle className="h-4 w-4" />
                                                 </Button>
                                             )}
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setComplaintIdToDelete(complaint.id);
+                                                    setIsDeleteDialogOpen(true);
+                                                }}
+                                                title="Delete Complaint"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -266,6 +304,28 @@ const AdminComplaints = () => {
                         )}
                         <Button variant="secondary" onClick={() => setSelectedComplaint(null)}>
                             Close
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-red-600">
+                            <Trash2 className="h-5 w-5" />
+                            Confirm Deletion
+                        </DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this complaint? This action cannot be undone and will remove the record from the database.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="flex sm:justify-between gap-2">
+                        <Button variant="secondary" onClick={() => setIsDeleteDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleDelete}>
+                            Delete Permanently
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -13,6 +13,7 @@ import StudentPayments from "@/pages/student/StudentPayments";
 import StudentMenu from "@/pages/student/StudentMenu";
 import StudentRoom from "@/pages/student/StudentRoom";
 import StudentLeaves from "@/pages/student/StudentLeaves";
+import StudentAttendance from "@/pages/student/StudentAttendance";
 import MessDashboard from "@/pages/mess/MessDashboard";
 import AdminStudents from "@/pages/admin/AdminStudents";
 import AdminRooms from "@/pages/admin/AdminRooms";
@@ -65,7 +66,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={homeRedirect()} />
-      <Route path="/login" element={isAuthenticated ? homeRedirect() : <LoginPage />} />
+      <Route path="/login" element={<LoginPage />} />
 
       {/* Admin routes */}
       <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><DashboardLayout /></ProtectedRoute>}>
@@ -87,6 +88,7 @@ const AppRoutes = () => {
         <Route path="complaints" element={<StudentComplaints />} />
         <Route path="payments" element={<StudentPayments />} />
         <Route path="leaves" element={<StudentLeaves />} />
+        <Route path="attendance" element={<StudentAttendance />} />
       </Route>
 
       {/* Mess staff routes */}
