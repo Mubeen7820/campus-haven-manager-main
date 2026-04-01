@@ -30,7 +30,7 @@ import { supabase } from "@/lib/supabase";
 
 const AdminStudents = () => {
     const [students, setStudents] = useState<Student[]>([]);
-    const [rooms, setRooms] = useState<{ id: number; room_number: string; block: string }[]>([]);
+    const [rooms, setRooms] = useState<{ id: number; room_number: string; block: string; capacity: number; current_occupancy: number }[]>([]);
     const [blocks, setBlocks] = useState<Block[]>([]);
     const [search, setSearch] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -72,7 +72,13 @@ const AdminStudents = () => {
                 blockService.fetchBlocks().catch(() => [] as Block[])
             ]);
             setStudents(sData);
-            setRooms(rData.map(r => ({ id: r.id, room_number: r.room_number, block: r.block })));
+            setRooms(rData.map(r => ({ 
+                id: r.id, 
+                room_number: r.room_number, 
+                block: r.block,
+                capacity: r.capacity,
+                current_occupancy: r.current_occupancy
+            })));
             setBlocks(bData);
             
             // Create a mapping of profile_id to avatar_url
@@ -109,6 +115,36 @@ const AdminStudents = () => {
         }
 
         try {
+            // Check room capacity using real-time count from student list
+            const selectedRoomIdStr = formData.room_id ? String(formData.room_id) : "none";
+            
+            if (selectedRoomIdStr !== "none") {
+                const selectedRoomIdNum = Number(selectedRoomIdStr);
+                const room = rooms.find(r => r.id === selectedRoomIdNum);
+                
+                if (room) {
+                    // Count actual students currently in this room right now
+                    const actualOccupancy = students.filter(s => s.room_id === selectedRoomIdNum).length;
+                    
+                    console.log(`Verifying Capacity: Room ${room.room_number}, Max: ${room.capacity}, Current: ${actualOccupancy}`);
+
+                    if (actualOccupancy >= room.capacity) {
+                        // Find out if the student we are EDITING is already in this room
+                        const originalStudent = editingId ? students.find(s => s.id === editingId) : null;
+                        const wasAlreadyInThisRoom = originalStudent && originalStudent.room_id === selectedRoomIdNum;
+                        
+                        // Only block them if they are a NEW student or are CHANGING into this full room
+                        if (!wasAlreadyInThisRoom) {
+                            toast.error(
+                                `STOP! Room ${room.room_number} is FULL. It only allows ${room.capacity} students and already has ${actualOccupancy}.`, 
+                                { duration: 5000 }
+                            );
+                            return; // PREVENT SUBMISSION
+                        }
+                    }
+                }
+            }
+
             const studentData = {
                 name: formData.name,
                 room_id: formData.room_id ? Number(formData.room_id) : null,
@@ -360,20 +396,28 @@ const AdminStudents = () => {
                                         <SelectContent>
                                             <SelectItem value="none">No Room Assigned</SelectItem>
                                             {(() => {
+                                                // Function to normalize name (e.g. "Block A" -> "A")
+                                                const normalize = (name: string) => name.replace(/^block\s+/i, '').trim().toUpperCase();
+
                                                 // Dynamically get gender from blocks table
                                                 const blockGender: Record<string, string> = {};
-                                                blocks.forEach(b => { blockGender[b.name] = b.type; });
+                                                blocks.forEach(b => { 
+                                                    blockGender[normalize(b.name)] = b.type; 
+                                                });
                                                 
                                                 const grouped: Record<string, typeof rooms> = {};
                                                 rooms.forEach(r => {
                                                     if (!grouped[r.block]) grouped[r.block] = [];
                                                     grouped[r.block].push(r);
                                                 });
+                                                
                                                 return Object.entries(grouped).map(([block, blockRooms]) => {
-                                                    const gender = blockGender[block] || '';
+                                                    // Find gender using normalized name
+                                                    const gender = blockGender[normalize(block)];
+                                                    
                                                     return blockRooms.map(r => (
                                                         <SelectItem key={r.id} value={r.id.toString()}>
-                                                            {r.block} {gender ? `(${gender})` : ''} - Room {r.room_number}
+                                                            {r.block} {gender ? `(${gender === 'Boys' ? 'Boys' : 'Girls'})` : ''} - Room {r.room_number}
                                                         </SelectItem>
                                                     ));
                                                 });

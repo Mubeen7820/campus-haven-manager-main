@@ -348,6 +348,9 @@ const AdminRooms = () => {
                             ) : (
                                 filteredRooms.map((room) => {
                                     const curOcc = students.filter(s => s.room_id === room.id).length;
+                                    const isFull = curOcc >= room.capacity;
+                                    const displayStatus = isFull ? "Occupied" : room.status;
+
                                     return (
                                         <tr key={room.id} className="group hover:bg-slate-50/50 transition-colors">
                                             <td className="py-5 px-8 font-bold text-[#0f172a]">{room.room_number}</td>
@@ -360,9 +363,9 @@ const AdminRooms = () => {
                                                     <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                                         <div 
                                                             className={`h-full transition-all duration-500 rounded-full ${
-                                                                curOcc >= room.capacity ? 'bg-amber-500' : 'bg-blue-500'
+                                                                isFull ? 'bg-amber-500' : 'bg-blue-500'
                                                             }`}
-                                                            style={{ width: `${(curOcc / room.capacity) * 100}%` }}
+                                                            style={{ width: `${Math.min((curOcc / room.capacity) * 100, 100)}%` }}
                                                         />
                                                     </div>
                                                     <span className="text-xs font-black text-slate-400 tracking-tighter">
@@ -373,12 +376,12 @@ const AdminRooms = () => {
                                         <td className="py-5 px-6">
                                             <span
                                                 className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border ${
-                                                    room.status === "Available" ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                                                    room.status === "Occupied" ? "bg-blue-50 text-blue-600 border-blue-100" :
+                                                    displayStatus === "Available" ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                                                    displayStatus === "Occupied" ? "bg-blue-50 text-blue-600 border-blue-100" :
                                                     "bg-amber-50 text-amber-600 border-amber-100"
                                                 }`}
                                             >
-                                                {room.status}
+                                                {displayStatus}
                                             </span>
                                         </td>
                                         <td className="py-5 px-8 text-right">

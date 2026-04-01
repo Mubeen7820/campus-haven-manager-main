@@ -66,14 +66,9 @@ const AdminDashboard = () => {
 
         // Calculate Stats - Using direct students count for accuracy
         const totalStudents = students.length;
-<<<<<<< HEAD
-        const totalRooms = rooms.reduce((acc, r) => acc + r.capacity, 0); // Capacity based
-        const occupied = students.filter(s => s.room_id).length;
-=======
         const totalRoomsCapacity = rooms.reduce((acc, r) => acc + r.capacity, 0);
         // Calculate actual occupied beds from students table for guaranteed accuracy
         const occupiedBeds = students.filter(s => s.room_id !== null && s.room_id !== undefined).length;
->>>>>>> 49870dd0c219e3b781f75123c9229a2548cfdac0
 
         const totalPayments = payments
           .filter(p => p.status === 'Paid')

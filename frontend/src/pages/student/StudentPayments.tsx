@@ -29,11 +29,7 @@ const StudentPayments = () => {
   };
 
   useEffect(() => {
-<<<<<<< HEAD
     let timer: ReturnType<typeof setInterval> | undefined;
-=======
-    let timer: ReturnType<typeof setInterval>;
->>>>>>> 49870dd0c219e3b781f75123c9229a2548cfdac0
     if (isScannerOpen && timeLeft > 0) {
       timer = setInterval(() => {
         setTimeLeft((prev) => prev - 1);
