@@ -32,6 +32,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
   const fetchProfile = React.useCallback(async (userId: string, email: string) => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -160,7 +161,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .eq('id', data.user.id)
           .single();
 
-        if (profileError) return { error: profileError };
+        if (profileError) {
+          setIsLoading(false);
+          return { error: profileError };
+        }
+        
+        // Ensure context state is updated BEFORE returning
+        await fetchProfile(data.user.id, data.user.email!);
+        
         return { role: profile.role as UserRole, error: null };
       }
 

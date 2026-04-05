@@ -66,6 +66,23 @@ const StudentDashboard = () => {
     return menu?.find(m => m.day_of_week === day && m.meal_type === meal)?.items || "-";
   };
 
+  const calculateAttendance = () => {
+    if (!studentData) return { percent: 0, present: 0, total: 0 };
+    
+    const today = new Date();
+    const joinDate = (studentData as any).created_at ? new Date((studentData as any).created_at) : today;
+    const diffTime = Math.abs(today.getTime() - joinDate.getTime());
+    const daysSinceJoining = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    
+    const expectedTotal = daysSinceJoining * 3; 
+    const presentCount = attendanceLogs.length;
+    
+    const percent = expectedTotal > 0 ? Math.min(100, Math.round((presentCount / expectedTotal) * 100)) : 0;
+    return { percent, present: presentCount, total: expectedTotal };
+  };
+
+  const attendanceStats = calculateAttendance();
+
   return (
     <div className="p-2 lg:p-4 space-y-8 animate-in fade-in duration-700">
       {/* Greeting Header */}
@@ -115,13 +132,13 @@ const StudentDashboard = () => {
             textColor: "text-purple-600"
           },
           {
-            title: "Profile Status",
-            value: "Verified",
-            sub: "All documents approved",
-            icon: Activity,
-            gradient: "from-emerald-500 to-emerald-600",
-            lightBg: "bg-emerald-50",
-            textColor: "text-emerald-600"
+            title: "Attendance Rate",
+            value: `${attendanceStats.percent}%`,
+            sub: `${attendanceStats.present}/${attendanceStats.total} meals taken`,
+            icon: BarChart2,
+            gradient: "from-amber-500 to-amber-600",
+            lightBg: "bg-amber-50",
+            textColor: "text-amber-600"
           },
         ].map((card, i) => (
           <motion.div

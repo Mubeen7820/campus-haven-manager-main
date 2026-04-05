@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, UserRole } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -35,32 +35,67 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showLogin, setShowLogin] = useState(false);
-  const { login, logout } = useAuth();
+  const { login, logout, isAuthenticated, user, isLoading } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const paths: Record<UserRole, string> = { admin: "/admin", student: "/student", mess_staff: "/mess" };
+      navigate(paths[user.role], { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsLoggingIn(true);
 
-    const { role: userRole, error: loginError } = await login(email, password);
+    try {
+      const { role: userRole, error: loginError } = await login(email, password);
 
-    if (loginError) {
-      setError(loginError.message || "Incorrect email or password");
-      return;
+      if (loginError) {
+        setError(loginError.message || "Incorrect email or password");
+        setIsLoggingIn(false);
+        return;
+      }
+
+      if (userRole !== selectedRole) {
+        const roleNames = { student: "Student", admin: "Admin", mess_staff: "Mess Staff" };
+        setError(`Unauthorized: Your account is not registered as ${roleNames[selectedRole]}. Please select the correct role.`);
+        await logout();
+        setIsLoggingIn(false);
+        return;
+      }
+
+      const paths: Record<UserRole, string> = { admin: "/admin", student: "/student", mess_staff: "/mess" };
+      navigate(paths[userRole], { replace: true });
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+      setIsLoggingIn(false);
     }
-
-    if (userRole !== selectedRole) {
-      const roleNames = { student: "Student", admin: "Admin", mess_staff: "Mess Staff" };
-      setError(`Unauthorized: Your account is not registered as ${roleNames[selectedRole]}. Please select the correct role.`);
-      await logout();
-      return;
-    }
-
-    const paths: Record<UserRole, string> = { admin: "/admin", student: "/student", mess_staff: "/mess" };
-    navigate(paths[userRole]);
   };
+
+  // Prevent showing the landing page if already authenticated or loading the session
+  if (isLoading || (isAuthenticated && user)) {
+    return (
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-white font-sans">
+        <motion.div
+           initial={{ opacity: 0, scale: 0.8 }}
+           animate={{ opacity: 1, scale: 1 }}
+           className="relative"
+        >
+          <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+             <div className="w-2 h-2 bg-primary rounded-full animate-ping"></div>
+          </div>
+        </motion.div>
+        <p className="mt-6 text-slate-400 font-medium tracking-widest animate-pulse uppercase text-xs">Authenticating</p>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -105,9 +140,9 @@ const LoginPage = () => {
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
-            className="lg:w-1/2 text-white text-center lg:text-left self-start lg:mt-8"
+            className="w-full lg:w-3/5 text-white text-center lg:text-left self-start lg:mt-8"
           >
-            <h1 className="text-4xl lg:text-[54px] xl:text-[64px] font-extrabold mb-6 text-white leading-[1.1] tracking-tight text-center lg:text-left drop-shadow-xl">
+            <h1 className="text-[4vw] font-extrabold mb-6 text-white leading-[1.1] tracking-tight text-center lg:text-left drop-shadow-2xl whitespace-nowrap">
               <img
                 src="/aurora-logo.png"
                 alt="A"
@@ -223,21 +258,28 @@ const LoginPage = () => {
                         {error}
                       </div>
                     )}
-                    <button
-                      type="submit"
-                      className="relative w-full p-[1.5px] rounded-xl overflow-hidden group shadow-lg transition-all hover:scale-[1.02]"
-                    >
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          background: 'conic-gradient(from var(--angle), transparent 25%, #06b6d4, transparent 50%)',
-                          animation: 'shimmer-spin 2.5s linear infinite',
-                        }}
-                      />
-                      <span className="relative z-10 w-full text-xl py-5 bg-[#1e293b] text-white rounded-xl flex items-center justify-center gap-2 group-hover:bg-[#0f172a] transition-all font-black tracking-wide">
-                        LOGIN <ArrowRight className="w-6 h-6 ml-2" />
-                      </span>
-                    </button>
+                      <button
+                        type="submit"
+                        disabled={isLoggingIn}
+                        className={`relative w-full p-[1.5px] rounded-xl overflow-hidden group shadow-lg transition-all ${isLoggingIn ? "opacity-70 scale-95" : "hover:scale-[1.02]"}`}
+                      >
+                        <div
+                          className="absolute inset-0"
+                          style={{
+                            background: 'conic-gradient(from var(--angle), transparent 25%, #06b6d4, transparent 50%)',
+                            animation: 'shimmer-spin 2.5s linear infinite',
+                          }}
+                        />
+                        <span className="relative z-10 w-full text-xl py-5 bg-[#1e293b] text-white rounded-xl flex items-center justify-center gap-2 group-hover:bg-[#0f172a] transition-all font-black tracking-wide uppercase">
+                          {isLoggingIn ? (
+                            <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                          ) : (
+                            <>
+                              LOGIN <ArrowRight className="w-6 h-6 ml-2" />
+                            </>
+                          )}
+                        </span>
+                      </button>
                   </form>
                 </motion.div>
               )}
